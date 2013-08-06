@@ -47,7 +47,8 @@ def process_line(line_coords, angle, distance):
     coords = []
     for x, y in line_coords:
         x = x * math.cos(angle)
-        z = -x * math.sin(angle)
+        z = y #swap y,z for delaunay tetrahedralization
+        y = -x * math.sin(angle)
         coords.append((x,y,z))
     return coords
 
@@ -133,8 +134,8 @@ class Processor:
 
 
     def visualize(self):
-        visualize_points(np.array(self.point_cloud))
-        #visualize_mesh(np.array(self.point_cloud))
+        #visualize_points(np.array(self.point_cloud))
+        visualize_mesh(np.array(self.point_cloud))
 
 
 if __name__=="__main__":
