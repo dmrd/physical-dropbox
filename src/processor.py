@@ -3,12 +3,9 @@ import numpy as np
 
 def thresh(color_img):
     ''' Threshold the image so that the most intense pixels are white '''
+    n = 0.35 # use top n% of pixels
     bw_img = cv2.cvtColor(color_img, cv2.COLOR_BGR2GRAY)
-
-    # sort bar by order of values in foo
     flatrank = np.argsort(bw_img.ravel())
-    # get the top n% of pixels
-    n = 0.35
     thresh_index = flatrank[int(len(flatrank) * (1 - 0.01*n))]
     thresh_value = np.ravel(bw_img)[thresh_index]
 
@@ -41,10 +38,14 @@ def process_line(line_coords, angle):
     pass
 
 
+def points_to_mesh(points, fname):
+    '''write a mesh file equivalent of points, which is a list of (x,y,z) tuples'''
+    pass
+
+
 class Processor:
     def __init__(self):
         self.point_cloud = []
-
 
     def process_picture(self, picture, angle):
         ''' Takes picture and angle (in degrees).  Adds to point cloud '''
@@ -52,8 +53,19 @@ class Processor:
         pixels = line_coords(thresholded)             # Get line coords from image
         self.point_cloud.extend(process_line(pixels)) # Add new points to cloud
 
-
     def process_pictures(self, pictures):
         for picture in pictures:
             self.process_picture(picture)
+            picture = preprocess(picture)
+            pixels = extract_pixels(picture)
+
+
+if __name__=="__main__":
+    proc = Processor()
+    img = cv2.imread('camera_test/Picture 5.jpg')
+
+    # test preprocess
+    img = thresh(img)
+    cv2.imshow('', img)
+    cv2.waitKey(0)
 
