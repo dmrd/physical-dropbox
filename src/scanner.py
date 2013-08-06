@@ -1,9 +1,15 @@
+import serial
+
+s = serial.Serial('/dev/cu.usbmodem1411') # Need to specify port to arduino
+
 class Turntable:
     def __init__(self, serial_object):
         pass
 
     def step(self, angle):
-        pass
+        '''Excepts angle to turn to in degrees'''
+        s.write(str(angle))
+
 
 
 class Laser:
@@ -11,10 +17,11 @@ class Laser:
         pass
 
     def on(self):
-        pass
+        s.write('-1')
+
 
     def off(self):
-        pass
+        s.write('-2')
 
 
 class Camera:
