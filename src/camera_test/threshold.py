@@ -4,8 +4,12 @@ import os
 
 def thresh(img_name):
     img = cv2.imread(img_name, cv2.CV_LOAD_IMAGE_GRAYSCALE)
+<<<<<<< Updated upstream
 
     # sort bar by order of values in foo
+=======
+    
+>>>>>>> Stashed changes
     flatrank = np.argsort(img.ravel())
     # get the top n% of pixels
     n = 0.35
