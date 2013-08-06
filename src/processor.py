@@ -32,8 +32,8 @@ def line_coords(thresholded):
     '''
     pixels = []
     for y, line in enumerate(thresholded[BUFFER:-BUFFER]):
-        white_pix = np.where(line[BUFFER:-BUFFER])
-        if len(white_pix[0]):
+        white_pix = np.nonzero(line[BUFFER:-BUFFER])[0]
+        if len(white_pix):
             # Add x,y tuple
             pixels.append((white_pix[int(len(white_pix) / 2)] + BUFFER, y + BUFFER))
     return np.array(pixels)
@@ -88,11 +88,8 @@ class Processor:
 
 
     def process_pictures(self, pictures):
-        for picture in pictures:
-            self.process_picture(picture)
-            picture = preprocess(picture)
-            pixels = extract_pixels(picture)
-            self.point_cloud.extend(pixels)
+        for i, picture in enumerate(pictures):
+            self.process_picture(picture, i * 360.0 / len(pictures))
 
 
     def load_cloud(self, path):
@@ -130,5 +127,5 @@ if __name__=="__main__":
     #visualize_points(points)
 
     # test visualize_mesh
-    #visualize_mesh(points) 
+    #visualize_mesh(points)
 
