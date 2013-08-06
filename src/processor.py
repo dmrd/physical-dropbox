@@ -13,20 +13,19 @@ def thresh(color_img):
     return bw_img
 
 
+BUFFER = 5 # Ignore pixels within this distance of the edge
+
 def line_coords(thresholded):
     '''
     Return [a list of (x,y)] tuples representing the middle white pixel of each
         line for which one exists
     '''
     pixels = []
-    for y, line in enumerate(thresholded):
-        white_pix = []
-        for x,pixel in enumerate(line):
-            if pixel == 0:
-                white_pix.append(x)
-        if white_pix:
+    for y, line in enumerate(thresholded[BUFFER:-BUFFER]):
+        white_pix = np.where(line[BUFFER:-BUFFER])
+        if len(white_pix[0]):
             # Add x,y tuple
-            pixels.append((white_pix[int(len(white_pix) / 2)], y))
+            pixels.append((white_pix[int(len(white_pix) / 2)] + BUFFER, y + BUFFER))
     return pixels
 
 
