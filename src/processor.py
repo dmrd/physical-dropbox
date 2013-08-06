@@ -8,7 +8,6 @@ from math import radians
 import pylab
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
-from scipy.spatial import Delaunay
 
 
 def thresh(color_img):
@@ -67,9 +66,34 @@ def visualize_points(points):
 
 def visualize_mesh(points):
     '''delaunay triangulation on numpy array of [x y z] points'''
-    tri = Delaunay(points)
-    pass
-
+    from mpl_toolkits.mplot3d import Axes3D
+    from matplotlib import cm
+    import matplotlib.pyplot as plt
+    from matplotlib.mlab import griddata
+    import numpy as np
+    
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    
+    data = points
+    x = data[:,0]
+    y = data[:,1]
+    z = data[:,2]
+    
+    xi = np.linspace(min(x), max(x))
+    yi = np.linspace(min(y), max(y))
+    
+    X, Y = np.meshgrid(xi, yi)
+    Z = griddata(x, y, z, xi, yi)
+    
+    surf = ax.plot_surface(X, Y, Z, rstride=5, cstride=5, cmap=cm.jet,
+                           linewidth=1, antialiased=True)
+    
+    ax.set_zlim3d(np.min(Z), np.max(Z))
+    fig.colorbar(surf)
+    
+    plt.show()
+    
 
 class Processor:
     def __init__(self, laser_camera_distance = 1, laser_angle = 30.0, path=None):
@@ -90,6 +114,7 @@ class Processor:
     def process_pictures(self, pictures):
         for i, picture in enumerate(pictures):
             self.process_picture(picture, i * 360.0 / len(pictures))
+            print "processed %d" % i
 
 
     def load_cloud(self, path):
@@ -108,13 +133,14 @@ class Processor:
 
     def visualize(self):
         visualize_points(np.array(self.point_cloud))
+        #visualize_mesh(np.array(self.point_cloud))
 
 
 if __name__=="__main__":
     proc = Processor()
     img = cv2.imread(sys.argv[1])
 
-    proc.process_picture(img, 0)
+    proc.process_pictures([img]*20)
     proc.visualize()
 
     # test preprocess
@@ -122,10 +148,8 @@ if __name__=="__main__":
     #cv2.imshow('', img)
     #cv2.waitKey(0)
 
-    # test visualize_points
+    # test visualize points / mesh
     #points = 0.6 * np.random.standard_normal((200,3))
     #visualize_points(points)
-
-    # test visualize_mesh
     #visualize_mesh(points)
 
