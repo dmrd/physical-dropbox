@@ -1,5 +1,8 @@
 import cv2
 import numpy as np
+import math
+import csv
+from math import radians
 
 def thresh(color_img):
     ''' Threshold the image so that the most intense pixels are white '''
@@ -29,21 +32,30 @@ def line_coords(thresholded):
         if len(white_pix[0]):
             # Add x,y tuple
             pixels.append((white_pix[int(len(white_pix) / 2)] + BUFFER, y + BUFFER))
-    return pixels
+    return np.array(pixels)
 
 
-def process_line(line_coords, angle):
+def process_line(line_coords, angle, distance):
     '''
-    Return [a list of (x,y,z)] tuples representing the point cloud calculated
-        from line_coords and the given angle
+    Return [a list of (x,y,z)] tuples representing thepoint cloud calculated
+        from line_coords and the given angle (in degrees)
     '''
-    pass
+    angle = radians(angle)
+    coords = []
+    for x, y in line_coords:
+        x = x * math.cos(angle)
+        z = -x * math.sin(angle)
+        coords.append((x,y,z))
+    return coords
 
 
 class Processor:
-    def __init__(self):
+    def __init__(self, laser_camera_distance = 1, laser_angle = 30.0, path=None):
         self.point_cloud = []
-
+        self.distance = laser_camera_distance
+        self.angle = laser_angle
+        if path:
+            self.load_cloud(path)
 
     def process_picture(self, picture, angle):
         ''' Takes picture and angle (in degrees).  Adds to point cloud '''
@@ -56,3 +68,14 @@ class Processor:
         for picture in pictures:
             self.process_picture(picture)
 
+    def load_cloud(self, path):
+        with open(path, 'r') as f:
+            reader = csv.reader(f)
+            for point in reader:
+                self.point_cloud.append(tuple(int(p) for p in point))
+
+    def save_cloud(self, path):
+        with open(path, 'w') as f:
+            writer = csv.writer(f)
+            for point in self.point_cloud:
+                writer.writerow(point)
