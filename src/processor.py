@@ -64,6 +64,7 @@ def visualize_points(points):
     ax.plot(points[:,0],points[:,1],points[:,2],'o')
     plt.show()
 
+# http://stackoverflow.com/questions/4363857/matplotlib-color-in-3d-plotting-from-an-x-y-z-data-set-without-using-contour
 def visualize_mesh(points):
     '''delaunay triangulation on numpy array of [x y z] points'''
     from mpl_toolkits.mplot3d import Axes3D
@@ -114,7 +115,7 @@ class Processor:
     def process_pictures(self, pictures):
         for i, picture in enumerate(pictures):
             self.process_picture(picture, i * 360.0 / len(pictures))
-            print "processed %d" % i
+            print "processed %d; angle %d" % (i, i*360.0/len(pictures))
 
 
     def load_cloud(self, path):
@@ -140,7 +141,7 @@ if __name__=="__main__":
     proc = Processor()
     img = cv2.imread(sys.argv[1])
 
-    proc.process_pictures([img]*20)
+    proc.process_pictures([img]*10)
     proc.visualize()
 
     # test preprocess
