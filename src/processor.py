@@ -5,9 +5,10 @@ import csv
 import sys
 from math import radians
 
-from pylab import *
+import pylab
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
+from scipy.spatial import Delaunay
 
 
 def thresh(color_img):
@@ -40,7 +41,7 @@ def line_coords(thresholded):
 
 def process_line(line_coords, angle, distance):
     '''
-    Return [a list of (x,y,z)] tuples representing thepoint cloud calculated
+    Return [a list of (x,y,z)] tuples representing the point cloud calculated
         from line_coords and the given angle (in degrees)
     '''
     angle = radians(angle)
@@ -58,11 +59,16 @@ def points_to_mesh(points, fname):
 
 
 def visualize_points(points):
-    '''3d scatter plot for testing; takes a numpy array of [x,y,z] points'''
-    fig = figure()
+    '''3d scatter plot for testing; takes a numpy array of [x y z] points'''
+    fig = pylab.figure()
     ax = fig.gca(projection='3d')
     ax.plot(points[:,0],points[:,1],points[:,2],'o')
     plt.show()
+
+def visualize_mesh(points):
+    '''delaunay triangulation on numpy array of [x y z] points'''
+    tri = Delaunay(points)
+    pass
 
 
 class Processor:
@@ -78,7 +84,7 @@ class Processor:
         ''' Takes picture and angle (in degrees).  Adds to point cloud '''
         thresholded = thresh(picture)                 # Do a hard threshold of the image
         pixels = line_coords(thresholded)             # Get line coords from image
-        self.point_cloud.extend(process_line(pixels)) # Add new points to cloud
+        self.point_cloud.extend(process_line(pixels, angle, self.distance)) # Add new points to cloud
 
 
     def process_pictures(self, pictures):
@@ -109,12 +115,20 @@ class Processor:
 
 if __name__=="__main__":
     proc = Processor()
-    #img = cv2.imread(sys.argv[1])
+    img = cv2.imread(sys.argv[1])
+
+    proc.process_picture(img, 0)
+    proc.visualize()
 
     # test preprocess
     #img = thresh(img)
     #cv2.imshow('', img)
     #cv2.waitKey(0)
 
-    points = 0.6 * np.random.standard_normal((200,3))
-    visualize_points(points)
+    # test visualize_points
+    #points = 0.6 * np.random.standard_normal((200,3))
+    #visualize_points(points)
+
+    # test visualize_mesh
+    #visualize_mesh(points) 
+
