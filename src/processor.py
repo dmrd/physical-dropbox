@@ -1,6 +1,12 @@
 import cv2
 import numpy as np
 
+from pylab import *
+from mpl_toolkits.mplot3d import Axes3D
+import numpy as np
+import matplotlib.pyplot as plt
+
+
 def thresh(color_img):
     ''' Threshold the image so that the most intense pixels are white '''
     n = 0.35 # use top n% of pixels
@@ -38,8 +44,16 @@ def process_line(line_coords, angle):
 
 
 def points_to_mesh(points, fname):
-    '''write a mesh file equivalent of points, which is a list of (x,y,z) tuples'''
+    '''write a mesh file equivalent of points, which is a numpy array of [x,y,z] points'''
     pass
+
+
+def visualize_points(points):
+    '''3d scatter plot for testing; takes a numpy array of [x,y,z] points'''
+    fig = figure()
+    ax = fig.gca(projection='3d')
+    ax.plot(points[:,0],points[:,1],points[:,2],'o')
+    plt.show()
 
 
 class Processor:
@@ -65,6 +79,9 @@ if __name__=="__main__":
 
     # test preprocess
     img = thresh(img)
-    cv2.imshow('', img)
-    cv2.waitKey(0)
+    #cv2.imshow('', img)
+    #cv2.waitKey(0)
+
+    points = 0.6 * np.random.standard_normal((200,3))
+    visualize_points(points)
 
