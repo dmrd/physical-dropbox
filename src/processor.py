@@ -148,8 +148,8 @@ class Processor:
 
 
     def visualize(self):
-        visualize_points(np.array(self.point_cloud))
-        #visualize_mesh(np.array(self.point_cloud))
+        #visualize_points(np.array(self.point_cloud))
+        visualize_mesh(np.array(self.point_cloud))
 
 
 if __name__=="__main__":
