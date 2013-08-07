@@ -1,4 +1,5 @@
 #define MOTOR_PIN 3
+#define LASER_PIN 4
 
 void setup() {
     Serial.begin(9600);
@@ -9,11 +10,11 @@ void setup() {
 }
 
 void laser_on() {
-    Serial.print(1);
+    digitalWrite(LASER_PIN, HIGH);
 }
 
 void laser_off() {
-    Serial.print(1);
+    digitalWrite(LASER_PIN, LOW);
 }
 
 // rotate step motor a specific number of steps (3200 steps is a full 360 degree rotation)
