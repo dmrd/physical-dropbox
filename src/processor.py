@@ -92,7 +92,15 @@ def visualize_mesh(points):
     fig.colorbar(surf)
     
     plt.show()
-    
+   
+
+def resize_image(image, new_x=None):
+    '''return scaled down image (aspect ratio is preserved)'''
+    new_x = new_x or 600
+    x,y = image.shape[1], image.shape[0]
+    new_y = y * new_x/x
+    return cv2.resize(image, (new_x, new_y))
+
 
 class Processor:
     def __init__(self, laser_camera_distance = 1, laser_angle = 30.0, path=None):
@@ -112,8 +120,9 @@ class Processor:
 
     def process_pictures(self, pictures):
         for i, picture in enumerate(pictures):
+            picture = resize_image(picture)
             self.process_picture(picture, i * 360.0 / len(pictures))
-            print "processed %d; angle %d" % (i, i*360.0/len(pictures))
+            print "processed %d; angle %f" % (i, i*360.0/len(pictures))
 
 
     def load_cloud(self, path):
