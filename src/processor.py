@@ -8,6 +8,9 @@ from math import radians
 import pylab
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
+from matplotlib import cm
+from matplotlib.mlab import griddata
+import numpy as np
 
 
 def thresh(color_img):
@@ -67,13 +70,7 @@ def visualize_points(points):
 
 # http://stackoverflow.com/questions/4363857/matplotlib-color-in-3d-plotting-from-an-x-y-z-data-set-without-using-contour
 def visualize_mesh(points):
-    '''delaunay triangulation on numpy array of [x y z] points'''
-    from mpl_toolkits.mplot3d import Axes3D
-    from matplotlib import cm
-    import matplotlib.pyplot as plt
-    from matplotlib.mlab import griddata
-    import numpy as np
-    
+    '''generate mesh via delaunay triangulation on numpy array of [x y z] points, and visualize'''
     fig = plt.figure()
     ax = fig.gca(projection='3d')
     
@@ -142,6 +139,7 @@ if __name__=="__main__":
     proc = Processor()
     img = cv2.imread(sys.argv[1])
 
+    # test same image, many revolutions
     proc.process_pictures([img]*10)
     proc.visualize()
 
