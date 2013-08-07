@@ -27,7 +27,7 @@ def thresh(color_img):
 
 BUFFER = 5 # Ignore pixels within this distance of the edge
 
-def line_coords(thresholded):
+def line_coords(thresholded, x_center):
     '''
     Return [a list of (x,y)] tuples representing the middle white pixel of each
         line for which one exists
@@ -37,7 +37,10 @@ def line_coords(thresholded):
         white_pix = np.nonzero(line[BUFFER:-BUFFER])[0]
         if len(white_pix):
             # Add x,y tuple
-            pixels.append((white_pix[int(len(white_pix) / 2)] + BUFFER, y + BUFFER))
+            pixels.append((
+                white_pix[int(len(white_pix) / 2)] + BUFFER - x_center,
+                -(y + BUFFER)
+                ))
     return np.array(pixels)
 
 
@@ -49,10 +52,10 @@ def process_line(line_coords, angle, distance):
     angle = radians(angle)
     coords = []
     for x, y in line_coords:
-        x = x * math.cos(angle)
-        z = y #swap y,z for delaunay tetrahedralization
-        y = -x * math.sin(angle)
-        coords.append((x,y,z))
+        nx = x * math.cos(angle)
+        nz = y #swap y,z for delaunay tetrahedralization
+        ny = -x * math.sin(angle)
+        coords.append((nx,ny,nz))
     return coords
 
 
@@ -113,12 +116,17 @@ class Processor:
 
     def process_picture(self, picture, angle):
         ''' Takes picture and angle (in degrees).  Adds to point cloud '''
-        thresholded = thresh(picture)                 # Do a hard threshold of the image
-        pixels = line_coords(thresholded)             # Get line coords from image
-        self.point_cloud.extend(process_line(pixels, angle, self.distance)) # Add new points to cloud
+        x_center = picture.shape[1]/2 # for now, let's say axis of rotation is the
+                                      # center of the image
+        thresholded = thresh(picture)                   # Do a hard threshold of the image
+        pixels = line_coords(thresholded, x_center)     # Get line coords from image
+        self.point_cloud.extend(
+            process_line(pixels, angle, self.distance)) # Add new points to cloud
 
 
     def process_pictures(self, pictures):
+        if filter(lambda x:x==None, pictures):
+            raise Exception('some pictures are null')
         for i, picture in enumerate(pictures):
             picture = resize_image(picture)
             self.process_picture(picture, i * 360.0 / len(pictures))
@@ -140,8 +148,8 @@ class Processor:
 
 
     def visualize(self):
-        #visualize_points(np.array(self.point_cloud))
-        visualize_mesh(np.array(self.point_cloud))
+        visualize_points(np.array(self.point_cloud))
+        #visualize_mesh(np.array(self.point_cloud))
 
 
 if __name__=="__main__":
@@ -149,7 +157,7 @@ if __name__=="__main__":
     img = cv2.imread(sys.argv[1])
 
     # test same image, many revolutions
-    proc.process_pictures([img]*10)
+    proc.process_pictures([img]*20)
     proc.visualize()
 
     # test preprocess
