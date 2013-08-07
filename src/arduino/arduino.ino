@@ -7,6 +7,9 @@ void setup() {
     // set up motor control pins
     pinMode(MOTOR_PIN, OUTPUT);
     digitalWrite(MOTOR_PIN, LOW);
+    
+    pinMode(LASER_PIN, OUTPUT);
+    digitalWrite(LASER_PIN, LOW);    
 }
 
 void laser_on() {
