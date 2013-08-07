@@ -1,6 +1,7 @@
 import cv2
 
 
-def save_images(imgs, prefix="scan_{0}.jpg"):
+def save_images(imgs, prefix="scan_{0}"):
     for i, img in enumerate(imgs):
-        cv2.imwrite(prefix.format(i), img)
+        i = str(i).zfill(3)
+        cv2.imwrite(prefix.format(i) + ".jpg", img)
