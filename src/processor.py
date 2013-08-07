@@ -12,6 +12,9 @@ from matplotlib import cm
 from matplotlib.mlab import griddata
 from mpl_toolkits.mplot3d import Axes3D
 
+
+HARD_THRESHOLD = 20
+
 def thresh(color_img):
     ''' Threshold the image so that the most intense pixels are white '''
     n = 0.35  # use top n% of pixels
@@ -20,7 +23,7 @@ def thresh(color_img):
     thresh_index = flatrank[int(len(flatrank) * (1 - 0.01*n))]
     thresh_value = np.ravel(bw_img)[thresh_index]
 
-    bw_img = cv2.threshold(bw_img, thresh_value, 255, cv2.THRESH_BINARY)[1]
+    bw_img = cv2.threshold(bw_img, max(thresh_value, HARD_THRESHOLD), 255, cv2.THRESH_BINARY)[1]
     return bw_img
 
 
@@ -119,8 +122,8 @@ class Processor:
 
     def process_picture(self, picture, angle, calibration_pixels):
         ''' Takes picture and angle (in degrees).  Adds to point cloud '''
-        x_center = picture.shape[1]/2 # for now, let's say axis of rotation is the
-                                      # center of the image
+        # TODO actual center of rotation
+        x_center = picture.shape[1]*0.54
         thresholded = thresh(picture)                   # Do a hard threshold of the image
         pixels = line_coords(thresholded, x_center)     # Get line coords from image
 
@@ -143,7 +146,7 @@ class Processor:
         if filter(lambda x:x==None, pictures):
             raise Exception('some pictures are null')
         for i, picture in enumerate(pictures):
-            picture = resize_image(picture)
+            #picture = resize_image(picture)
             self.process_picture(picture, i * 360.0 / len(pictures), calibration_pixels)
             print "processed %d; angle %f" % (i, i*360.0/len(pictures))
 
@@ -170,6 +173,8 @@ if __name__ == "__main__":
     # calibration image is whatever because we're not using that right now
     calibration_img = cv2.imread('mesh_test_images/calibration.jpg')
 
+    # TODO WHY IS EVERYTHING A CYLINDER?????? FUCK
+
     # TEST IT!!! FO REAL
     prefix = sys.argv[1]
     images = []
@@ -177,6 +182,9 @@ if __name__ == "__main__":
         if f.startswith(prefix):    # this should cover more cases but for now whatever
             f = os.path.join('img', f)
             images.append(cv2.imread(f))
+
+    #images = [cv2.imread('mesh_test_images/Picture 4.jpg')]
+    #images = [cv2.imread('img/ball_000.jpg'), cv2.imread('img/ball_001.jpg')]
 
     proc.process_pictures(images, calibration_img)
     proc.visualize()
