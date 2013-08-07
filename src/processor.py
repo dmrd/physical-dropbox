@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import math
 import csv
-import sys
+import sys, os
 from math import radians
 
 import pylab
@@ -166,12 +166,26 @@ class Processor:
 
 if __name__ == "__main__":
     proc = Processor()
-    img = cv2.imread(sys.argv[1])
+
+    # calibration image is whatever because we're not using that right now
     calibration_img = cv2.imread('mesh_test_images/calibration.jpg')
 
-    # test same image, many revolutions
-    proc.process_pictures([img]*20, calibration_img) 
+    # TEST IT!!! FO REAL
+    prefix = sys.argv[1]
+    images = []
+    for f in os.listdir('img'):
+        if f.startswith(prefix):    # this should cover more cases but for now whatever
+            f = os.path.join('img', f)
+            images.append(cv2.imread(f))
+
+    proc.process_pictures(images, calibration_img)
     proc.visualize()
+
+    # test same image, many revolutions
+    #img = cv2.imread(sys.argv[1])
+    #calibration_img = cv2.imread('mesh_test_images/calibration.jpg')
+    #proc.process_pictures([img]*20, calibration_img) 
+    #proc.visualize()
 
     # test preprocess
     #img = thresh(img)
