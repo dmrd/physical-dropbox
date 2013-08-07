@@ -14,7 +14,7 @@ from matplotlib.mlab import griddata
 
 def thresh(color_img):
     ''' Threshold the image so that the most intense pixels are white '''
-    n = 0.35 # use top n% of pixels
+    n = 0.35  # use top n% of pixels
     bw_img = cv2.cvtColor(color_img, cv2.COLOR_BGR2GRAY)
     flatrank = np.argsort(bw_img.ravel())
     thresh_index = flatrank[int(len(flatrank) * (1 - 0.01*n))]
@@ -24,7 +24,8 @@ def thresh(color_img):
     return bw_img
 
 
-BUFFER = 5 # Ignore pixels within this distance of the edge
+BUFFER = 5  # Ignore pixels within this distance of the edge
+
 
 def line_coords(thresholded):
     '''
@@ -36,7 +37,8 @@ def line_coords(thresholded):
         white_pix = np.nonzero(line[BUFFER:-BUFFER])[0]
         if len(white_pix):
             # Add x,y tuple
-            pixels.append((white_pix[int(len(white_pix) / 2)] + BUFFER, y + BUFFER))
+            pixels.append((white_pix[int(len(white_pix) / 2)] + BUFFER,
+                           y + BUFFER))
     return np.array(pixels)
 
 
@@ -49,14 +51,14 @@ def process_line(line_coords, angle, distance):
     coords = []
     for x, y in line_coords:
         x = x * math.cos(angle)
-        z = y #swap y,z for delaunay tetrahedralization
+        z = y  # swap y,z for delaunay tetrahedralization
         y = -x * math.sin(angle)
-        coords.append((x,y,z))
+        coords.append((x, y, z))
     return coords
 
 
 def points_to_mesh(points, fname):
-    '''write a mesh file equivalent of points, which is a numpy array of [x,y,z] points'''
+    '''write a mesh file equivalent of a numpy array of [x,y,z] points'''
     pass
 
 
@@ -64,20 +66,23 @@ def visualize_points(points):
     '''3d scatter plot for testing; takes a numpy array of [x y z] points'''
     fig = pylab.figure()
     ax = fig.gca(projection='3d')
-    ax.plot(points[:,0],points[:,1],points[:,2],'o')
+    ax.plot(points[:, 0], points[:, 1], points[:, 2], 'o')
     plt.show()
+
 
 # http://stackoverflow.com/questions/4363857/matplotlib-color-in-3d-plotting-from-an-x-y-z-data-set-without-using-contour
 def visualize_mesh(points):
-    '''delaunay triangulation on numpy array of [x y z] points'''
-
+    '''
+    generate and visualize a mesh
+    delaunay triangulation on numpy array of [x y z] points
+    '''
     fig = plt.figure()
     ax = fig.gca(projection='3d')
 
     data = points
-    x = data[:,0]
-    y = data[:,1]
-    z = data[:,2]
+    x = data[:, 0]
+    y = data[:, 1]
+    z = data[:, 2]
 
     xi = np.linspace(min(x), max(x))
     yi = np.linspace(min(y), max(y))
@@ -94,27 +99,34 @@ def visualize_mesh(points):
     plt.show()
 
 
+def resize_image(image, new_x=None):
+    '''return scaled down image (aspect ratio is preserved)'''
+    new_x = new_x or 600
+    x, y = image.shape[1], image.shape[0]
+    new_y = y * new_x/x
+    return cv2.resize(image, (new_x, new_y))
+
+
 class Processor:
-    def __init__(self, laser_camera_distance = 1, laser_angle = 30.0, path=None):
+    def __init__(self, laser_camera_distance=1, laser_angle=30.0, path=None):
         self.point_cloud = []
         self.distance = laser_camera_distance
         self.angle = laser_angle
         if path:
             self.load_cloud(path)
 
-
     def process_picture(self, picture, angle):
         ''' Takes picture and angle (in degrees).  Adds to point cloud '''
-        thresholded = thresh(picture)                 # Do a hard threshold of the image
-        pixels = line_coords(thresholded)             # Get line coords from image
-        self.point_cloud.extend(process_line(pixels, angle, self.distance)) # Add new points to cloud
-
+        thresholded = thresh(picture)      # Do a hard threshold of the image
+        pixels = line_coords(thresholded)  # Get line coords from image
+        # Add new points to cloud
+        self.point_cloud.extend(process_line(pixels, angle, self.distance))
 
     def process_pictures(self, pictures):
         for i, picture in enumerate(pictures):
+            picture = resize_image(picture)
             self.process_picture(picture, i * 360.0 / len(pictures))
-            print "processed %d; angle %d" % (i, i*360.0/len(pictures))
-
+            print "processed %d; angle %f" % (i, i*360.0/len(pictures))
 
     def load_cloud(self, path):
         with open(path, 'r') as f:
@@ -122,23 +134,22 @@ class Processor:
             for point in reader:
                 self.point_cloud.append(tuple(int(p) for p in point))
 
-
     def save_cloud(self, path):
         with open(path, 'w') as f:
             writer = csv.writer(f)
             for point in self.point_cloud:
                 writer.writerow(point)
 
-
     def visualize(self):
         #visualize_points(np.array(self.point_cloud))
         visualize_mesh(np.array(self.point_cloud))
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     proc = Processor()
     img = cv2.imread(sys.argv[1])
 
+    # test same image, many revolutions
     proc.process_pictures([img]*10)
     proc.visualize()
 
@@ -151,4 +162,3 @@ if __name__=="__main__":
     #points = 0.6 * np.random.standard_normal((200,3))
     #visualize_points(points)
     #visualize_mesh(points)
-
