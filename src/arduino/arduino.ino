@@ -1,4 +1,5 @@
 #define MOTOR_PIN 3
+#define LASER_PIN 4
 
 void setup() {
     Serial.begin(9600);
@@ -9,10 +10,12 @@ void setup() {
 }
 
 void laser_on() {
+    digitalWrite(LASER_PIN, HIGH);
     Serial.print(1);
 }
 
 void laser_off() {
+    digitalWrite(LASER_PIN, LOW);
     Serial.print(1);
 }
 
