@@ -52,8 +52,17 @@ class Laser:
 
 
 class Camera:
-    def __init__(self, camera_id=0):
-        self.c = cv2.VideoCapture(camera_id)
+    def __init__(self):
+        # detect which camera to use
+        for i in xrange(0,3):
+            cam = cv2.VideoCapture(i)
+            # hacky hardcode to look for our camera
+            if cam.get(3)==1920.0 and cam.get(4)==1080:
+                break
+        if not cam.isOpened():
+            raise Exception("Could not find the camera.")
+        self.c = cam
+        print "selected camera %d" % i
 
     def take_picture(self):
         return self.c.read()
@@ -99,3 +108,4 @@ class Scanner:
                   for i in range(rotation_intervals)]
         self.laser.off()
         return result
+

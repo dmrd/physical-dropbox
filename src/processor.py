@@ -123,7 +123,7 @@ class Processor:
     def process_picture(self, picture, angle, calibration_pixels):
         ''' Takes picture and angle (in degrees).  Adds to point cloud '''
         # TODO actual center of rotation
-        x_center = picture.shape[1]*0.54
+        x_center = picture.shape[1]*0.53
         thresholded = thresh(picture)                   # Do a hard threshold of the image
         pixels = line_coords(thresholded, x_center)     # Get line coords from image
 

@@ -9,4 +9,4 @@ s = scanner.Scanner()
 
 result = s.do_rotation(rotations)
 
-util.save_images(result, prefix=prefix + "_{0}")
+util.save_images(result, prefix="img/"+prefix + "_{0}")
