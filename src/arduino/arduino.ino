@@ -18,12 +18,12 @@ void laser_off() {
 
 // rotate step motor a specific number of steps (3200 steps is a full 360 degree rotation)
 void rotate(int steps) {
-  int delay = 1000; // delay between each microstep, value between 70 and 7000 recommended (smaller means faster rotation)
+  int step_delay = 1000; // delay between each microstep, value between 70 and 7000 recommended (smaller means faster rotation)
   for (int i = 0; i < steps; i++) {
     digitalWrite(MOTOR_PIN, HIGH);
-    delayMicroseconds(delay);
+    delayMicroseconds(step_delay);
     digitalWrite(MOTOR_PIN, LOW);
-    delayMicroseconds(delay);
+    delayMicroseconds(step_delay);
   }
   Serial.print(1);
 }
