@@ -6,6 +6,12 @@ import cv2
 PORT_SIGNAL = "usbmodem"
 
 
+def wait_arduino(com):
+        com.read()  # Block until success byte received
+        com.flushInput()
+        com.flushOutput()
+
+
 class Turntable:
     def __init__(self, serial_object):
         self.com = serial_object
@@ -17,6 +23,7 @@ class Turntable:
         Accepts number of steps to take
         '''
         self.com.write(str(steps))
+        wait_arduino(self.com)
 
     def step_interval(self, rotation_intervals):
         '''
@@ -37,13 +44,15 @@ class Laser:
 
     def on(self):
         self.com.write('-1')
+        wait_arduino(self.com)
 
     def off(self):
         self.com.write('-2')
+        wait_arduino(self.com)
 
 
 class Camera:
-    def __init__(self, camera_id=1):
+    def __init__(self, camera_id=0):
         self.c = cv2.VideoCapture(camera_id)
 
     def take_picture(self):
@@ -77,9 +86,7 @@ class Scanner:
         Returns resulting image
         '''
         self.turntable.step_interval(rotation_intervals)
-        self.laser.on()
-        img = self.camera.take_picture()
-        self.laser.off()
+        _, img = self.camera.take_picture()
         return img
 
     def do_rotation(self, rotation_intervals=36):
@@ -87,5 +94,8 @@ class Scanner:
         Do an entire rotation
         Returns [array of images] for the entire rotation
         '''
-        return [self.step(rotation_intervals)
-                for i in range(rotation_intervals)]
+        self.laser.on()
+        result = [self.step(rotation_intervals)
+                  for i in range(rotation_intervals)]
+        self.laser.off()
+        return result

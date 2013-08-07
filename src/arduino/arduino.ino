@@ -9,11 +9,11 @@ void setup() {
 }
 
 void laser_on() {
-    Serial.print("Laser on!\n");
+    Serial.print(1);
 }
 
 void laser_off() {
-    Serial.print("Laser off!\n");
+    Serial.print(1);
 }
 
 // rotate step motor a specific number of steps (3200 steps is a full 360 degree rotation)
@@ -25,6 +25,7 @@ void rotate(int steps) {
     digitalWrite(MOTOR_PIN, LOW);
     delayMicroseconds(step_delay);
   }
+  Serial.print(1);
 }
 
 void loop() {
