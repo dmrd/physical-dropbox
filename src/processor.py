@@ -6,8 +6,10 @@ import sys
 from math import radians
 
 import pylab
-from mpl_toolkits.mplot3d import Axes3D
+
 import matplotlib.pyplot as plt
+from matplotlib import cm
+from matplotlib.mlab import griddata
 
 
 def thresh(color_img):
@@ -68,34 +70,29 @@ def visualize_points(points):
 # http://stackoverflow.com/questions/4363857/matplotlib-color-in-3d-plotting-from-an-x-y-z-data-set-without-using-contour
 def visualize_mesh(points):
     '''delaunay triangulation on numpy array of [x y z] points'''
-    from mpl_toolkits.mplot3d import Axes3D
-    from matplotlib import cm
-    import matplotlib.pyplot as plt
-    from matplotlib.mlab import griddata
-    import numpy as np
-    
+
     fig = plt.figure()
     ax = fig.gca(projection='3d')
-    
+
     data = points
     x = data[:,0]
     y = data[:,1]
     z = data[:,2]
-    
+
     xi = np.linspace(min(x), max(x))
     yi = np.linspace(min(y), max(y))
-    
+
     X, Y = np.meshgrid(xi, yi)
     Z = griddata(x, y, z, xi, yi)
-    
+
     surf = ax.plot_surface(X, Y, Z, rstride=5, cstride=5, cmap=cm.jet,
                            linewidth=1, antialiased=True)
-    
+
     ax.set_zlim3d(np.min(Z), np.max(Z))
     fig.colorbar(surf)
-    
+
     plt.show()
-    
+
 
 class Processor:
     def __init__(self, laser_camera_distance = 1, laser_angle = 30.0, path=None):
