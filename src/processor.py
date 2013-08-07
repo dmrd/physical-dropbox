@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import math
 import csv
-import sys
+import sys, os
 from math import radians
 
 import pylab
@@ -10,7 +10,6 @@ import pylab
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.mlab import griddata
-
 from mpl_toolkits.mplot3d import Axes3D
 
 def thresh(color_img):
@@ -118,21 +117,34 @@ class Processor:
         if path:
             self.load_cloud(path)
 
-    def process_picture(self, picture, angle):
+    def process_picture(self, picture, angle, calibration_pixels):
         ''' Takes picture and angle (in degrees).  Adds to point cloud '''
         x_center = picture.shape[1]/2 # for now, let's say axis of rotation is the
                                       # center of the image
         thresholded = thresh(picture)                   # Do a hard threshold of the image
         pixels = line_coords(thresholded, x_center)     # Get line coords from image
-        self.point_cloud.extend(
-            process_line(pixels, angle, self.distance)) # Add new points to cloud
 
-    def process_pictures(self, pictures):
+        # TODO filter out any pixels coincident with calibration lines
+        #pixels = filter(lambda p: p not in calibration_pixels, pixels)
+
+        # add to point cloud
+        self.point_cloud.extend(
+            process_line(pixels, angle, self.distance))
+
+    def process_pictures(self, pictures, calibration_img):
+
+        # extract pixels from calibration image
+        # this is a condensed version of process_picture without line detection
+        calibration_pixels = line_coords(thresh(calibration_img), calibration_img.shape[1]/2)
+        calibration_pixels = calibration_pixels.tolist()
+        # TODO this is not in the right format still
+
+        # process pics
         if filter(lambda x:x==None, pictures):
             raise Exception('some pictures are null')
         for i, picture in enumerate(pictures):
             picture = resize_image(picture)
-            self.process_picture(picture, i * 360.0 / len(pictures))
+            self.process_picture(picture, i * 360.0 / len(pictures), calibration_pixels)
             print "processed %d; angle %f" % (i, i*360.0/len(pictures))
 
     def load_cloud(self, path):
@@ -148,17 +160,32 @@ class Processor:
                 writer.writerow(point)
 
     def visualize(self):
-        #visualize_points(np.array(self.point_cloud))
-        visualize_mesh(np.array(self.point_cloud))
+        visualize_points(np.array(self.point_cloud))
+        #visualize_mesh(np.array(self.point_cloud))
 
 
 if __name__ == "__main__":
     proc = Processor()
-    img = cv2.imread(sys.argv[1])
+
+    # calibration image is whatever because we're not using that right now
+    calibration_img = cv2.imread('mesh_test_images/calibration.jpg')
+
+    # TEST IT!!! FO REAL
+    prefix = sys.argv[1]
+    images = []
+    for f in os.listdir('img'):
+        if f.startswith(prefix):    # this should cover more cases but for now whatever
+            f = os.path.join('img', f)
+            images.append(cv2.imread(f))
+
+    proc.process_pictures(images, calibration_img)
+    proc.visualize()
 
     # test same image, many revolutions
-    proc.process_pictures([img]*20)
-    proc.visualize()
+    #img = cv2.imread(sys.argv[1])
+    #calibration_img = cv2.imread('mesh_test_images/calibration.jpg')
+    #proc.process_pictures([img]*20, calibration_img) 
+    #proc.visualize()
 
     # test preprocess
     #img = thresh(img)
