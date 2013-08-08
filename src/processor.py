@@ -210,3 +210,4 @@ if __name__ == "__main__":
     proc.process_continuous(images, num_rotations)
     proc.visualize()
     proc.save_ply(prefix + '.ply')
+
