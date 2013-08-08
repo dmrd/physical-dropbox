@@ -181,4 +181,5 @@ if __name__ == "__main__":
 
     proc.process_pictures(images)
     proc.visualize()
+    proc.save_cloud('prefix.csv')
 
