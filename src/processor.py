@@ -16,18 +16,29 @@ from scipy.spatial import Delaunay
 import create_mesh
 
 
-HARD_THRESHOLD = 20
-CENTER = 0.495
+HARD_THRESHOLD = 30
+CENTER = 0.53#0.495
+
+def calibrate_back_wall(calibration_img):
+    '''pick x-coordinate for laser line falling on back wall (we ignore any light to the right of this)'''
+    # TODO
+    pass
+
 
 def thresh(color_img):
     ''' Threshold the image so that the most intense pixels are white '''
-    n = 0.35  # use top n% of pixels
     bw_img = cv2.cvtColor(color_img, cv2.COLOR_BGR2GRAY)
+    # TODO grab green pixels instead of reducing to gray
+
+    n = 0.35  # use top n% of pixels
     flatrank = np.argsort(bw_img.ravel())
     thresh_index = flatrank[int(len(flatrank) * (1 - 0.01*n))]
     thresh_value = np.ravel(bw_img)[thresh_index]
-
     bw_img = cv2.threshold(bw_img, max(thresh_value, HARD_THRESHOLD), 255, cv2.THRESH_BINARY)[1]
+
+    normalized = cv2.equalizeHist(bw_img)
+    bw_img = cv2.threshold(normalized, 254, 255, cv2.THRESH_BINARY)[1]
+
     return bw_img
 
 
