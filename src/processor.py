@@ -12,6 +12,9 @@ from matplotlib import cm
 from matplotlib.mlab import griddata
 from mpl_toolkits.mplot3d import Axes3D
 
+from scipy.spatial import Delaunay
+import create_mesh
+
 
 HARD_THRESHOLD = 20
 CENTER = 0.495
@@ -64,8 +67,14 @@ def process_line(line_coords, angle, distance):
 
 
 def points_to_mesh(points, fname):
-    '''write a mesh file equivalent of a numpy array of [x,y,z] points'''
-    pass
+    '''write a VRML file equivalent of a numpy array of [x,y,z] points'''
+    points = np.array(points).astype(np.float64)
+    tri = Delaunay(points)
+    print tri.vertices[0], type(tri.vertices[0])
+    # tri.vertices: [[v1, v2, v3, v4],...] (this actually means faces i think)
+    #plt.triplot(points[:,0], points[:,1], points[:,2], tri.vertices)
+    #plt.plot(points[:,0], points[:,1], points[:,2], 'o')
+    #plt.show()
 
 
 def visualize_points(points):
@@ -150,6 +159,9 @@ class Processor:
             #picture = resize_image(picture)
             self.process_picture(picture, i * 360.0 / len(pictures), calibration_pixels)
             print "processed %d; angle %f" % (i, i*360.0/len(pictures))
+
+        # save to wrl
+        points_to_mesh(self.point_cloud, 'OMG.wrl')
 
     def load_cloud(self, path):
         with open(path, 'r') as f:
