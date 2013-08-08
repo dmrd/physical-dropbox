@@ -13,14 +13,15 @@ from scipy.spatial import Delaunay
 
 
 #CENTER = 0.495 # current center
-CENTER = 0.53 # for old megaminx set
-HARD_THRESHOLD = 30     # always ignore pix below this value
+CENTER = 0.53 # for old scans
+HARD_THRESHOLD = 40     # always ignore pixels below this value
 BACK_WALL_MARGIN = 15
 LINE_COORDS_BUFFER = 5  # Ignore pixels within this distance of the edge
 
 
 def find_back_wall(calibration_img):
-    '''pick x-coordinate for laser line falling on back wall (we ignore any light to the right of this)'''
+    '''pick x-coordinate for laser line falling on back wall
+       (we ignore any light to the right of this)'''
     x = line_coords(thresh(calibration_img, 1, 10))
     if len(x)==0:
         return calibration_img.shape[1]
@@ -28,12 +29,11 @@ def find_back_wall(calibration_img):
     return np.bincount(x).argmax() - BACK_WALL_MARGIN # mode minus margin
 
 
-def thresh(color_img, percent=0.35, hard_threshold=HARD_THRESHOLD):
+def thresh(color_img, percent=0.2, hard_threshold=HARD_THRESHOLD):
     ''' Threshold the image so that the most intense pixels are white '''
-    # only use green channel
-    #color_img = cv2.split(color_img)[1]
+    bw_img = cv2.split(color_img)[1] # just extract green channel
+    #bw_img = cv2.cvtColor(color_img, cv2.COLOR_BGR2GRAY)
 
-    bw_img = cv2.cvtColor(color_img, cv2.COLOR_BGR2GRAY)
     flatrank = np.argsort(bw_img.ravel())
     thresh_index = flatrank[int(len(flatrank) * (1 - 0.01*percent))]
     thresh_value = np.ravel(bw_img)[thresh_index]
