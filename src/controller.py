@@ -3,6 +3,10 @@ import util
 import sys
 import os
 
+if len(sys.argv) < 3:
+    print("python {0} num_rotations prefix".format(sys.argv[0]))
+    exit()
+
 rotations = int(sys.argv[1])
 prefix = str(sys.argv[2])
 

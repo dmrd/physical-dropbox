@@ -189,11 +189,11 @@ class Processor:
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print("python {0} prefix num_rotations [calibration_image]".format(sys.argv[0]))
+        print("python {0} num_rotations prefix [calibration_image]".format(sys.argv[0]))
         exit()
-    prefix = sys.argv[1]
+    num_rotations = int(sys.argv[1])
+    prefix = sys.argv[2]
     calibration_name = 'calibration/calibration.jpg'
-    num_rotations = int(sys.argv[2])
     if len(sys.argv) > 3:
         calibration_name = sys.argv[3]
 
@@ -209,5 +209,5 @@ if __name__ == "__main__":
     #proc.process_pictures(images)
     proc.process_continuous(images, num_rotations)
     proc.visualize()
-    proc.save_ply(prefix + '.ply')
+    proc.save_ply("ply/" + prefix + '.ply')
 
