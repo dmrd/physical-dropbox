@@ -88,12 +88,14 @@ class Scanner:
         self.laser = Laser(self.com)
         self.camera = Camera()
 
-    def step(self, rotation_intervals=36):
+    def step(self, rotation_intervals=36, progress=None):
         '''
         Take a step and return an image.
         Step size calculated to correspond to num_steps_per_rotation
         Returns resulting image
-        '''
+            '''
+        if progress:
+            print(progress)
         self.turntable.step_interval(rotation_intervals)
         _, img = self.camera.take_picture()
         return img
@@ -104,7 +106,7 @@ class Scanner:
         Returns [array of images] for the entire rotation
         '''
         self.laser.on()
-        result = [self.step(rotation_intervals)
+        result = [self.step(rotation_intervals, progress=i)
                   for i in range(rotation_intervals)]
         self.laser.off()
         return result
