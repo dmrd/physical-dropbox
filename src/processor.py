@@ -1,8 +1,6 @@
 import cv2
 import numpy as np
-import math
-import csv
-import sys, os
+import sys, os, math, csv
 from math import radians
 
 import pylab
@@ -11,18 +9,20 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.mlab import griddata
 from mpl_toolkits.mplot3d import Axes3D
-
 from scipy.spatial import Delaunay
-import create_mesh
 
 
-HARD_THRESHOLD = 30
-CENTER = 0.53#0.495
+CENTER = 0.495 # current center
+#CENTER = 0.53 # for old megaminx set
+HARD_THRESHOLD = 30     # always ignore pix below this value
+BACK_WALL_MARGIN = 15
+LINE_COORDS_BUFFER = 5  # Ignore pixels within this distance of the edge
 
-def calibrate_back_wall(calibration_img):
+
+def find_back_wall(calibration_img):
     '''pick x-coordinate for laser line falling on back wall (we ignore any light to the right of this)'''
-    # TODO
-    pass
+    x = line_coords(thresh(calibration_img))[:,0]
+    return np.bincount(x).argmax() - BACK_WALL_MARGIN # mode minus margin
 
 
 def thresh(color_img):
@@ -36,29 +36,29 @@ def thresh(color_img):
     thresh_value = np.ravel(bw_img)[thresh_index]
     bw_img = cv2.threshold(bw_img, max(thresh_value, HARD_THRESHOLD), 255, cv2.THRESH_BINARY)[1]
 
-    normalized = cv2.equalizeHist(bw_img)
-    bw_img = cv2.threshold(normalized, 254, 255, cv2.THRESH_BINARY)[1]
+    #normalized = cv2.equalizeHist(bw_img)
+    #bw_img = cv2.threshold(normalized, 254, 255, cv2.THRESH_BINARY)[1]
 
     return bw_img
 
 
-BUFFER = 5  # Ignore pixels within this distance of the edge
-
-
-def line_coords(thresholded, x_center):
+def line_coords(thresholded, x_center=None):
     '''
     Return [a list of (x,y)] tuples representing the middle white pixel of each
-        line for which one exists
+        line for which one exists. If x_center given, transforms coordinates so that
+        the axis of rotation is x=0.
     '''
     pixels = []
-    for y, line in enumerate(thresholded[BUFFER:-BUFFER]):
-        white_pix = np.nonzero(line[BUFFER:-BUFFER])[0]
+    for y, line in enumerate(thresholded[LINE_COORDS_BUFFER:-LINE_COORDS_BUFFER]):
+        white_pix = np.nonzero(line[LINE_COORDS_BUFFER:-LINE_COORDS_BUFFER])[0]
         if len(white_pix):
             # Add x,y tuple
             pixels.append((
-                white_pix[int(len(white_pix) / 2)] + BUFFER - x_center,
-                -(y + BUFFER)
+                white_pix[int(len(white_pix) / 2)] + LINE_COORDS_BUFFER,
+                y + LINE_COORDS_BUFFER
                 ))
+    if x_center is not None:
+        pixels = [(x-x_center, -y) for (x,y) in pixels]
     return np.array(pixels)
 
 
@@ -134,41 +134,35 @@ def resize_image(image, new_x=None):
 
 
 class Processor:
-    def __init__(self, laser_camera_distance=1, laser_angle=30.0, path=None):
+    def __init__(self, calibration_img, laser_camera_distance=1, laser_angle=30.0, path=None):
+        self.back_wall_x = find_back_wall(calibration_img)
+        print "back wall x: %d pixels" % self.back_wall_x
         self.point_cloud = []
         self.distance = laser_camera_distance
         self.angle = laser_angle
         if path:
             self.load_cloud(path)
 
-    def process_picture(self, picture, angle, calibration_pixels):
+    def process_picture(self, picture, angle):
         ''' Takes picture and angle (in degrees).  Adds to point cloud '''
-        # TODO actual center of rotation
         x_center = picture.shape[1] * CENTER
         thresholded = thresh(picture)                   # Do a hard threshold of the image
         pixels = line_coords(thresholded, x_center)     # Get line coords from image
 
-        # TODO filter out any pixels coincident with calibration lines
-        #pixels = filter(lambda p: p not in calibration_pixels, pixels)
+        # filter out any pixels to right of back wall line
+        pixels = filter(lambda p:p[0] < self.back_wall_x - x_center, pixels)
 
         # add to point cloud
         self.point_cloud.extend(
             process_line(pixels, angle, self.distance))
 
-    def process_pictures(self, pictures, calibration_img):
-
-        # extract pixels from calibration image
-        # this is a condensed version of process_picture without line detection
-        calibration_pixels = line_coords(thresh(calibration_img), calibration_img.shape[1]/2)
-        calibration_pixels = calibration_pixels.tolist()
-        # TODO this is not in the right format still
-
+    def process_pictures(self, pictures):
         # process pics
         if filter(lambda x:x==None, pictures):
             raise Exception('some pictures are null')
         for i, picture in enumerate(pictures):
-            #picture = resize_image(picture)
-            self.process_picture(picture, i * 360.0 / len(pictures), calibration_pixels)
+            #picture = resize_image(picture) #if we turn resize back on, don't forget to adjust back_wall_x
+            self.process_picture(picture, i * 360.0 / len(pictures))
             print "processed %d; angle %f" % (i, i*360.0/len(pictures))
 
         # save to wrl
@@ -192,18 +186,20 @@ class Processor:
 
 
 if __name__ == "__main__":
-    proc = Processor()
-
-    # calibration image is whatever because we're not using that right now
-    calibration_img = cv2.imread('mesh_test_images/calibration.jpg')
-
     prefix = sys.argv[1]
+    calibration_name = 'calibration/calibration.jpg'
+    if len(sys.argv)>2:
+        calibration_name = sys.argv[2]
+
+    calibration_img = cv2.imread(calibration_name)
+    proc = Processor(calibration_img)
+
     images = []
     path = 'img/%s' % prefix
     for f in os.listdir(path):
         f = os.path.join(path,f)
         images.append(cv2.imread(f))
 
-    proc.process_pictures(images, calibration_img)
+    proc.process_pictures(images)
     proc.visualize()
 
