@@ -9,10 +9,6 @@ from math import radians
 import pylab
 
 import matplotlib.pyplot as plt
-from matplotlib import cm
-from matplotlib.mlab import griddata
-from mpl_toolkits.mplot3d import Axes3D
-from scipy.spatial import Delaunay
 
 
 CENTER = 0.495  # current center
@@ -33,7 +29,8 @@ def find_back_wall(calibration_img):
     return np.bincount(x).argmax() - BACK_WALL_MARGIN  # mode minus margin
 
 
-def thresh(color_img, percent=PERCENT_TOP_PIXELS, hard_threshold=HARD_THRESHOLD):
+def thresh(color_img, percent=PERCENT_TOP_PIXELS,
+           hard_threshold=HARD_THRESHOLD):
     ''' Threshold the image so that the most intense pixels are white '''
     percent *= 0.01
     bw_img = cv2.split(color_img)[1]  # just extract green channel
@@ -42,7 +39,8 @@ def thresh(color_img, percent=PERCENT_TOP_PIXELS, hard_threshold=HARD_THRESHOLD)
     flatrank = np.argsort(bw_img.ravel())
     thresh_index = flatrank[int(len(flatrank) * (1 - percent))]
     thresh_value = np.ravel(bw_img)[thresh_index]
-    bw_img = cv2.threshold(bw_img, max(thresh_value, HARD_THRESHOLD), 255, cv2.THRESH_BINARY)[1]
+    bw_img = cv2.threshold(bw_img, max(thresh_value, HARD_THRESHOLD),
+                           255, cv2.THRESH_BINARY)[1]
 
     #normalized = cv2.equalizeHist(bw_img)
     #bw_img = cv2.threshold(normalized, 254, 255, cv2.THRESH_BINARY)[1]
@@ -52,8 +50,8 @@ def thresh(color_img, percent=PERCENT_TOP_PIXELS, hard_threshold=HARD_THRESHOLD)
 
 def line_coords(thresholded, x_center=None):
     '''
-    Return [a list of (x,y)] tuples representing the middle white pixel of each
-        line for which one exists. If x_center given, transforms coordinates so that
+    Return [a list of (x,y)] tuples representing middle white pixel per line
+    If x_center given, transforms coordinates so that
         the axis of rotation is x=0.
     '''
     pixels = []
@@ -111,8 +109,9 @@ def visualize_mesh(points):
 def resize_image(image, new_x=None):
     '''return scaled down image (aspect ratio is preserved)'''
     new_x = new_x or 600
+
     x, y = image.shape[1], image.shape[0]
-    new_y = y * new_x/x
+    new_y = y * new_x / x
     return cv2.resize(image, (new_x, new_y))
 
 
@@ -148,7 +147,7 @@ class Processor:
             #picture = resize_image(picture) #if we turn resize back on
             #  don't forget to adjust back_wall_x
             self.process_picture(picture, i * 360.0 / len(pictures))
-            print "processed %d; angle %f" % (i, i*360.0/len(pictures))
+            print "processed %d; angle %f" % (i, i * 360.0 / len(pictures))
 
         # save to wrl
         #points_to_mesh(self.point_cloud, 'OMG.wrl')
@@ -187,16 +186,7 @@ class Processor:
             print("Processing image {0} of {1}".format(i, len(images)))
 
 
-if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print("python {0} num_rotations prefix [calibration_image]".format(sys.argv[0]))
-        exit()
-    num_rotations = int(sys.argv[1])
-    prefix = sys.argv[2]
-    calibration_name = 'calibration/calibration.jpg'
-    if len(sys.argv) > 3:
-        calibration_name = sys.argv[3]
-
+def process_scan(num_rotations, prefix, calibration_name="calibration/calibration.jpg"):
     calibration_img = cv2.imread(calibration_name)
     proc = Processor(calibration_img)
 
@@ -211,3 +201,16 @@ if __name__ == "__main__":
     proc.visualize()
     proc.save_ply("ply/" + prefix + '.ply')
 
+
+if __name__ == "__main__":
+    if len(sys.argv) < 3:
+        print("python {0} num_rotations prefix [calibration_image]".format(sys.argv[0]))
+        exit()
+
+    num_rotations = int(sys.argv[1])
+    prefix = sys.argv[2]
+    calibration_name = 'calibration/calibration.jpg'
+    if len(sys.argv) > 3:
+        calibration_name = sys.argv[3]
+
+    process_scan(num_rotations=num_rotations, prefix=prefix, calibration_name=calibration_name)
