@@ -21,16 +21,21 @@ LINE_COORDS_BUFFER = 5  # Ignore pixels within this distance of the edge
 
 def find_back_wall(calibration_img):
     '''pick x-coordinate for laser line falling on back wall (we ignore any light to the right of this)'''
-    x = line_coords(thresh(calibration_img))[:,0]
+    x = line_coords(thresh(calibration_img, 1, 10))
+    if len(x)==0:
+        return calibration_img.shape[1]
+    x = x[:,0]
     return np.bincount(x).argmax() - BACK_WALL_MARGIN # mode minus margin
 
 
-def thresh(color_img):
+def thresh(color_img, percent=0.35, hard_threshold=HARD_THRESHOLD):
     ''' Threshold the image so that the most intense pixels are white '''
-    n = 0.035  # use top n% of pixels
+    # only use green channel
+    #color_img = cv2.split(color_img)[1]
+
     bw_img = cv2.cvtColor(color_img, cv2.COLOR_BGR2GRAY)
     flatrank = np.argsort(bw_img.ravel())
-    thresh_index = flatrank[int(len(flatrank) * (1 - 0.01*n))]
+    thresh_index = flatrank[int(len(flatrank) * (1 - 0.01*percent))]
     thresh_value = np.ravel(bw_img)[thresh_index]
     bw_img = cv2.threshold(bw_img, max(thresh_value, HARD_THRESHOLD), 255, cv2.THRESH_BINARY)[1]
 
@@ -118,6 +123,7 @@ class Processor:
         ''' Takes picture and angle (in degrees).  Adds to point cloud '''
         x_center = picture.shape[1] * CENTER
         thresholded = thresh(picture)                   # Do a hard threshold of the image
+        #cv2.imwrite('thresh_%d.jpg'%angle, thresholded) # for debugging
         pixels = line_coords(thresholded, x_center)     # Get line coords from image
 
         # filter out any pixels to right of back wall line
