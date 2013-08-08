@@ -12,8 +12,8 @@ from mpl_toolkits.mplot3d import Axes3D
 from scipy.spatial import Delaunay
 
 
-CENTER = 0.495 # current center
-#CENTER = 0.53 # for old megaminx set
+#CENTER = 0.495 # current center
+CENTER = 0.53 # for old megaminx set
 HARD_THRESHOLD = 30     # always ignore pix below this value
 BACK_WALL_MARGIN = 15
 LINE_COORDS_BUFFER = 5  # Ignore pixels within this distance of the edge
@@ -27,10 +27,8 @@ def find_back_wall(calibration_img):
 
 def thresh(color_img):
     ''' Threshold the image so that the most intense pixels are white '''
+    n = 0.035  # use top n% of pixels
     bw_img = cv2.cvtColor(color_img, cv2.COLOR_BGR2GRAY)
-    # TODO grab green pixels instead of reducing to gray
-
-    n = 0.35  # use top n% of pixels
     flatrank = np.argsort(bw_img.ravel())
     thresh_index = flatrank[int(len(flatrank) * (1 - 0.01*n))]
     thresh_value = np.ravel(bw_img)[thresh_index]
@@ -78,15 +76,8 @@ def process_line(line_coords, angle, distance):
 
 
 def points_to_mesh(points, fname):
-    '''write a VRML file equivalent of a numpy array of [x,y,z] points'''
-    points = np.array(points).astype(np.float64)
-    tri = Delaunay(points)
-    print tri.vertices[0], type(tri.vertices[0])
-    # tri.vertices: [[v1, v2, v3, v4],...] (this actually means faces i think)
-    #plt.triplot(points[:,0], points[:,1], points[:,2], tri.vertices)
-    #plt.plot(points[:,0], points[:,1], points[:,2], 'o')
-    #plt.show()
-
+    '''write a mesh file equivalent of a numpy array of [x,y,z] points'''
+    pass
 
 def visualize_points(points):
     '''3d scatter plot for testing; takes a numpy array of [x y z] points'''
@@ -95,8 +86,6 @@ def visualize_points(points):
     ax.plot(points[:, 0], points[:, 1], points[:, 2], 'o')
     plt.show()
 
-
-# http://stackoverflow.com/questions/4363857/matplotlib-color-in-3d-plotting-from-an-x-y-z-data-set-without-using-contour
 def visualize_mesh(points):
     '''
     generate and visualize a mesh
@@ -104,26 +93,8 @@ def visualize_mesh(points):
     '''
     fig = plt.figure()
     ax = fig.gca(projection='3d')
-
-    data = points
-    x = data[:, 0]
-    y = data[:, 1]
-    z = data[:, 2]
-
-    xi = np.linspace(min(x), max(x))
-    yi = np.linspace(min(y), max(y))
-
-    X, Y = np.meshgrid(xi, yi)
-    Z = griddata(x, y, z, xi, yi)
-
-    surf = ax.plot_surface(X, Y, Z, rstride=5, cstride=5, cmap=cm.jet,
-                           linewidth=1, antialiased=True)
-
-    ax.set_zlim3d(np.min(Z), np.max(Z))
-    fig.colorbar(surf)
-
+    ax.plot_trisurf(points[:, 0], points[:, 1], points[:, 2])
     plt.show()
-
 
 def resize_image(image, new_x=None):
     '''return scaled down image (aspect ratio is preserved)'''
@@ -158,7 +129,7 @@ class Processor:
 
     def process_pictures(self, pictures):
         # process pics
-        if filter(lambda x:x==None, pictures):
+        if filter(lambda x:x is None, pictures):
             raise Exception('some pictures are null')
         for i, picture in enumerate(pictures):
             #picture = resize_image(picture) #if we turn resize back on, don't forget to adjust back_wall_x
@@ -166,7 +137,7 @@ class Processor:
             print "processed %d; angle %f" % (i, i*360.0/len(pictures))
 
         # save to wrl
-        points_to_mesh(self.point_cloud, 'OMG.wrl')
+        #points_to_mesh(self.point_cloud, 'OMG.wrl')
 
     def load_cloud(self, path):
         with open(path, 'r') as f:
@@ -195,7 +166,7 @@ if __name__ == "__main__":
     proc = Processor(calibration_img)
 
     images = []
-    path = 'img/%s' % prefix
+    path = os.path.join('img', prefix)
     for f in os.listdir(path):
         f = os.path.join(path,f)
         images.append(cv2.imread(f))
