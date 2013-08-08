@@ -14,6 +14,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 
 HARD_THRESHOLD = 20
+CENTER = 0.495
 
 def thresh(color_img):
     ''' Threshold the image so that the most intense pixels are white '''
@@ -123,7 +124,7 @@ class Processor:
     def process_picture(self, picture, angle, calibration_pixels):
         ''' Takes picture and angle (in degrees).  Adds to point cloud '''
         # TODO actual center of rotation
-        x_center = picture.shape[1]*0.53
+        x_center = picture.shape[1] * CENTER
         thresholded = thresh(picture)                   # Do a hard threshold of the image
         pixels = line_coords(thresholded, x_center)     # Get line coords from image
 
