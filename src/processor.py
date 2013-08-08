@@ -197,34 +197,13 @@ if __name__ == "__main__":
     # calibration image is whatever because we're not using that right now
     calibration_img = cv2.imread('mesh_test_images/calibration.jpg')
 
-    # TODO WHY IS EVERYTHING A CYLINDER?????? FUCK
-
-    # TEST IT!!! FO REAL
     prefix = sys.argv[1]
     images = []
-    for f in os.listdir('img'):
-        if f.startswith(prefix):    # this should cover more cases but for now whatever
-            f = os.path.join('img', f)
-            images.append(cv2.imread(f))
-
-    #images = [cv2.imread('mesh_test_images/Picture 4.jpg')]
-    #images = [cv2.imread('img/ball_000.jpg'), cv2.imread('img/ball_001.jpg')]
+    path = 'img/%s' % prefix
+    for f in os.listdir(path):
+        f = os.path.join(path,f)
+        images.append(cv2.imread(f))
 
     proc.process_pictures(images, calibration_img)
     proc.visualize()
 
-    # test same image, many revolutions
-    #img = cv2.imread(sys.argv[1])
-    #calibration_img = cv2.imread('mesh_test_images/calibration.jpg')
-    #proc.process_pictures([img]*20, calibration_img) 
-    #proc.visualize()
-
-    # test preprocess
-    #img = thresh(img)
-    #cv2.imshow('', img)
-    #cv2.waitKey(0)
-
-    # test visualize points / mesh
-    #points = 0.6 * np.random.standard_normal((200,3))
-    #visualize_points(points)
-    #visualize_mesh(points)
