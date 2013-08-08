@@ -1,3 +1,5 @@
+import os
+import util
 import serial
 import serial.tools.list_ports
 import cv2
@@ -20,7 +22,7 @@ class Turntable:
 
     def async_step(self, steps=1):
         '''
-        Accepts number of steps to take.  Does not wait for it to finish turning
+        Accepts number of steps to take. Does not wait for it to finish turning
         '''
         self.com.write(str(steps))
 
@@ -119,7 +121,8 @@ class Scanner:
 
     def continuous(self, rotations=3):
         self.laser.on()
-        self.turntable.async_step(rotations * self.turntable.STEPS_PER_ROTATION)
+        self.turntable.async_step(rotations
+                                  * self.turntable.STEPS_PER_ROTATION)
         self.com.setTimeout(0)  # Timeout immediately on
         images = []
         while not self.com.read():
@@ -128,3 +131,16 @@ class Scanner:
         self.com.setTimeout(None)
         self.laser.off()
         return images
+
+
+def run_scan(num_rotations, prefix):
+    s = Scanner()
+    print("Scanner initialized")
+    result = s.continuous(num_rotations)
+    print("Images taken")
+
+    dir_name = os.path.join("img", prefix)
+    if not os.path.exists(dir_name):
+        os.makedirs(dir_name)
+    util.save_images(result, prefix=os.path.join(dir_name, "%s_{0}" % prefix))
+    print("Images saved")

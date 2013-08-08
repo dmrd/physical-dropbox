@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-import sys
 import os
 import math
 import csv
@@ -186,7 +185,8 @@ class Processor:
             print("Processing image {0} of {1}".format(i, len(images)))
 
 
-def process_scan(num_rotations, prefix, calibration_name="calibration/calibration.jpg"):
+def process_scan(num_rotations, prefix,
+                 calibration_name="calibration/calibration.jpg"):
     calibration_img = cv2.imread(calibration_name)
     proc = Processor(calibration_img)
 
@@ -200,17 +200,3 @@ def process_scan(num_rotations, prefix, calibration_name="calibration/calibratio
     proc.process_continuous(images, num_rotations)
     proc.visualize()
     proc.save_ply("ply/" + prefix + '.ply')
-
-
-if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print("python {0} num_rotations prefix [calibration_image]".format(sys.argv[0]))
-        exit()
-
-    num_rotations = int(sys.argv[1])
-    prefix = sys.argv[2]
-    calibration_name = 'calibration/calibration.jpg'
-    if len(sys.argv) > 3:
-        calibration_name = sys.argv[3]
-
-    process_scan(num_rotations=num_rotations, prefix=prefix, calibration_name=calibration_name)
