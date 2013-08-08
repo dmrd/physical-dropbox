@@ -18,6 +18,12 @@ class Turntable:
         # Number of steps for the turntable to do a full rotation
         self.STEPS_PER_ROTATION = 3200
 
+    def async_step(self, steps=1):
+        '''
+        Accepts number of steps to take.  Does not wait for it to finish turning
+        '''
+        self.com.write(str(steps))
+
     def step(self, steps=1):
         '''
         Accepts number of steps to take
@@ -54,10 +60,10 @@ class Laser:
 class Camera:
     def __init__(self):
         # detect which camera to use
-        for i in xrange(0,3):
+        for i in xrange(0, 3):
             cam = cv2.VideoCapture(i)
             # hacky hardcode to look for our camera
-            if cam.get(3)==1920.0 and cam.get(4)==1080:
+            if cam.get(3) == 1920.0 and cam.get(4) == 1080:
                 break
         if not cam.isOpened():
             raise Exception("Could not find the camera.")
@@ -111,3 +117,14 @@ class Scanner:
         self.laser.off()
         return result
 
+    def continuous(self, rotations=3):
+        self.laser.on()
+        self.turntable.async_step(rotations * self.turntable.STEPS_PER_ROTATION)
+        self.com.setTimeout(0)  # Timeout immediately on
+        images = []
+        while not self.com.read():
+            _, im = self.camera.take_picture()
+            images.append(im)
+        self.com.setTimeout(None)
+        self.laser.off()
+        return images

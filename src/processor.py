@@ -180,12 +180,22 @@ class Processor:
         visualize_points(np.array(self.point_cloud))
         #visualize_mesh(np.array(self.point_cloud))
 
+    def process_continuous(self, images, num_rotations):
+        for i, img in enumerate(images):
+            angle = 360.0 * i * num_rotations / len(images)
+            self.process_picture(img, angle)
+            print("Processing image {0} of {1}".format(i, len(images)))
+
 
 if __name__ == "__main__":
+    if len(sys.argv) < 3:
+        print("python {0} prefix num_rotations [calibration_image]".format(sys.argv[0]))
+        exit()
     prefix = sys.argv[1]
     calibration_name = 'calibration/calibration.jpg'
-    if len(sys.argv) > 2:
-        calibration_name = sys.argv[2]
+    num_rotations = int(sys.argv[2])
+    if len(sys.argv) > 3:
+        calibration_name = sys.argv[3]
 
     calibration_img = cv2.imread(calibration_name)
     proc = Processor(calibration_img)
@@ -196,7 +206,7 @@ if __name__ == "__main__":
         f = os.path.join(path, f)
         images.append(cv2.imread(f))
 
-    proc.process_pictures(images)
+    #proc.process_pictures(images)
+    proc.process_continuous(images, num_rotations)
     proc.visualize()
-    proc.save_cloud(prefix + '.csv')
     proc.save_ply(prefix + '.ply')
