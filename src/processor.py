@@ -1,6 +1,9 @@
 import cv2
 import numpy as np
-import sys, os, math, csv
+import sys
+import os
+import math
+import csv
 from math import radians
 
 import pylab
@@ -12,8 +15,8 @@ from mpl_toolkits.mplot3d import Axes3D
 from scipy.spatial import Delaunay
 
 
-CENTER = 0.495 # current center
-#CENTER = 0.53 # for old scans
+CENTER = 0.495  # current center
+#CENTER = 0.53  # for old scans
 HARD_THRESHOLD = 40       # always ignore pixels below this value
 BACK_WALL_MARGIN = 15
 LINE_COORDS_BUFFER = 5    # Ignore pixels within this distance of the edge
@@ -24,16 +27,16 @@ def find_back_wall(calibration_img):
     '''pick x-coordinate for laser line falling on back wall
        (we ignore any light to the right of this)'''
     x = line_coords(thresh(calibration_img, 1, 10))
-    if len(x)==0:
+    if len(x) == 0:
         return calibration_img.shape[1]
-    x = x[:,0]
-    return np.bincount(x).argmax() - BACK_WALL_MARGIN # mode minus margin
+    x = x[:, 0]
+    return np.bincount(x).argmax() - BACK_WALL_MARGIN  # mode minus margin
 
 
 def thresh(color_img, percent=PERCENT_TOP_PIXELS, hard_threshold=HARD_THRESHOLD):
     ''' Threshold the image so that the most intense pixels are white '''
     percent *= 0.01
-    bw_img = cv2.split(color_img)[1] # just extract green channel
+    bw_img = cv2.split(color_img)[1]  # just extract green channel
     #bw_img = cv2.cvtColor(color_img, cv2.COLOR_BGR2GRAY)
 
     flatrank = np.argsort(bw_img.ravel())
@@ -60,10 +63,9 @@ def line_coords(thresholded, x_center=None):
             # Add x,y tuple
             pixels.append((
                 white_pix[int(len(white_pix) / 2)] + LINE_COORDS_BUFFER,
-                y + LINE_COORDS_BUFFER
-                ))
+                y + LINE_COORDS_BUFFER))
     if x_center is not None:
-        pixels = [(x-x_center, -y) for (x,y) in pixels]
+        pixels = [(x - x_center, -y) for (x, y) in pixels]
     return np.array(pixels)
 
 
@@ -76,9 +78,9 @@ def process_line(line_coords, angle, distance):
     coords = []
     for x, y in line_coords:
         nx = x * math.cos(angle)
-        nz = y #swap y,z for delaunay tetrahedralization
+        nz = y  # swap y,z for delaunay tetrahedralization
         ny = -x * math.sin(angle)
-        coords.append((nx,ny,nz))
+        coords.append((nx, ny, nz))
     return coords
 
 
@@ -86,12 +88,14 @@ def points_to_mesh(points, fname):
     '''write a mesh file equivalent of a numpy array of [x,y,z] points'''
     pass
 
+
 def visualize_points(points):
     '''3d scatter plot for testing; takes a numpy array of [x y z] points'''
     fig = pylab.figure()
     ax = fig.gca(projection='3d')
     ax.plot(points[:, 0], points[:, 1], points[:, 2], 'o')
     plt.show()
+
 
 def visualize_mesh(points):
     '''
@@ -102,6 +106,7 @@ def visualize_mesh(points):
     ax = fig.gca(projection='3d')
     ax.plot_trisurf(points[:, 0], points[:, 1], points[:, 2])
     plt.show()
+
 
 def resize_image(image, new_x=None):
     '''return scaled down image (aspect ratio is preserved)'''
@@ -129,7 +134,7 @@ class Processor:
         pixels = line_coords(thresholded, x_center)     # Get line coords from image
 
         # filter out any pixels to right of back wall line
-        pixels = filter(lambda p:p[0] < self.back_wall_x - x_center, pixels)
+        pixels = filter(lambda p: p[0] < self.back_wall_x - x_center, pixels)
 
         # add to point cloud
         self.point_cloud.extend(
@@ -137,10 +142,11 @@ class Processor:
 
     def process_pictures(self, pictures):
         # process pics
-        if filter(lambda x:x is None, pictures):
+        if filter(lambda x: x is None, pictures):
             raise Exception('some pictures are null')
         for i, picture in enumerate(pictures):
-            #picture = resize_image(picture) #if we turn resize back on, don't forget to adjust back_wall_x
+            #picture = resize_image(picture) #if we turn resize back on
+            #  don't forget to adjust back_wall_x
             self.process_picture(picture, i * 360.0 / len(pictures))
             print "processed %d; angle %f" % (i, i*360.0/len(pictures))
 
@@ -159,6 +165,17 @@ class Processor:
             for point in self.point_cloud:
                 writer.writerow(point)
 
+    def save_ply(self, path):
+        with open(path, 'w') as f:
+            f.write("ply\nformat ascii 1.0\n")
+            f.write("element vertex {0}\n".format(len(self.point_cloud)))
+            f.write("property float x\nproperty float y\nproperty float z\n")
+            f.write("element face 0\n")
+            f.write("element edge 0\n")
+            f.write("end_header\n")
+            for point in self.point_cloud:
+                f.write("{0} {1} {2}\n".format(point[0], point[1], point[2]))
+
     def visualize(self):
         visualize_points(np.array(self.point_cloud))
         #visualize_mesh(np.array(self.point_cloud))
@@ -167,7 +184,7 @@ class Processor:
 if __name__ == "__main__":
     prefix = sys.argv[1]
     calibration_name = 'calibration/calibration.jpg'
-    if len(sys.argv)>2:
+    if len(sys.argv) > 2:
         calibration_name = sys.argv[2]
 
     calibration_img = cv2.imread(calibration_name)
@@ -176,10 +193,10 @@ if __name__ == "__main__":
     images = []
     path = os.path.join('img', prefix)
     for f in os.listdir(path):
-        f = os.path.join(path,f)
+        f = os.path.join(path, f)
         images.append(cv2.imread(f))
 
     proc.process_pictures(images)
     proc.visualize()
-    proc.save_cloud('prefix.csv')
-
+    proc.save_cloud(prefix + '.csv')
+    proc.save_ply(prefix + '.ply')
