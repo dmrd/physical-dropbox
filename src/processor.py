@@ -14,9 +14,10 @@ from scipy.spatial import Delaunay
 
 #CENTER = 0.495 # current center
 CENTER = 0.53 # for old scans
-HARD_THRESHOLD = 40     # always ignore pixels below this value
+HARD_THRESHOLD = 40       # always ignore pixels below this value
 BACK_WALL_MARGIN = 15
-LINE_COORDS_BUFFER = 5  # Ignore pixels within this distance of the edge
+LINE_COORDS_BUFFER = 5    # Ignore pixels within this distance of the edge
+PERCENT_TOP_PIXELS = 0.2  # max percent of brightness-ranked pixels to select
 
 
 def find_back_wall(calibration_img):
@@ -29,13 +30,14 @@ def find_back_wall(calibration_img):
     return np.bincount(x).argmax() - BACK_WALL_MARGIN # mode minus margin
 
 
-def thresh(color_img, percent=0.2, hard_threshold=HARD_THRESHOLD):
+def thresh(color_img, percent=PERCENT_TOP_PIXELS, hard_threshold=HARD_THRESHOLD):
     ''' Threshold the image so that the most intense pixels are white '''
+    percent *= 0.01
     bw_img = cv2.split(color_img)[1] # just extract green channel
     #bw_img = cv2.cvtColor(color_img, cv2.COLOR_BGR2GRAY)
 
     flatrank = np.argsort(bw_img.ravel())
-    thresh_index = flatrank[int(len(flatrank) * (1 - 0.01*percent))]
+    thresh_index = flatrank[int(len(flatrank) * (1 - percent))]
     thresh_value = np.ravel(bw_img)[thresh_index]
     bw_img = cv2.threshold(bw_img, max(thresh_value, HARD_THRESHOLD), 255, cv2.THRESH_BINARY)[1]
 
