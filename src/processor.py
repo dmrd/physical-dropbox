@@ -12,8 +12,8 @@ from mpl_toolkits.mplot3d import Axes3D
 from scipy.spatial import Delaunay
 
 
-#CENTER = 0.495 # current center
-CENTER = 0.53 # for old scans
+CENTER = 0.495 # current center
+#CENTER = 0.53 # for old scans
 HARD_THRESHOLD = 40       # always ignore pixels below this value
 BACK_WALL_MARGIN = 15
 LINE_COORDS_BUFFER = 5    # Ignore pixels within this distance of the edge
