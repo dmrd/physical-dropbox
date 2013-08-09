@@ -143,6 +143,7 @@ def run_scan(rotations, prefix, right=False):
     s = Scanner()
     print("Scanner initialized")
     print("Current laser is: " + "right" if right else "left")
+    print("Rotations: " + str(rotations))
     result = s.continuous(rotations, right=right)
     print("Images taken")
     raw_dir = 'raw_r' if right else 'raw_l'
