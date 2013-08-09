@@ -24,15 +24,6 @@ LINE_COORDS_BUFFER = 5
 PERCENT_TOP_PIXELS = 0.2  # max percent of brightness-ranked pixels to select
 
 
-def find_back_wall(calibration_img):
-    '''pick x-coordinate for laser lines falling on back wall
-       (we ignore any light outside of this)'''
-    x = line_coords(thresh(calibration_img, 1, 10))
-    if len(x) == 0:
-        return calibration_img.shape[1]
-    x = x[:, 0]
-    return np.bincount(x).argmax() - BACK_WALL_MARGIN  # mode minus margin
-
 def ignore_half(img, right=True):
     '''return a copy of img with part of the image <right> of axis blacked out'''
     x_center = int(img.shape[1] * CENTER)
@@ -132,28 +123,67 @@ def resize_image(image, new_x=None):
 
 class Processor:
     def __init__(self, calibration_img, laser_camera_distance=1, laser_angle=30.0, path=None):
-        self.back_wall_x = find_back_wall(calibration_img)
-        print "back wall x: %d pixels" % self.back_wall_x
+        self.find_back_wall(calibration_img)
+        #print "back wall: left=%d, right=%d" % (self.wall_left, self.wall_right)
+        print "back wall: %d" % self.find_back_wall(calibration_img)
         self.point_cloud = []
         self.distance = laser_camera_distance
         self.angle = laser_angle
         if path:
             self.load_cloud(path)
 
+    def find_back_wall(self, calibration_img):
+        '''pick x-coordinate for laser lines falling on back wall
+           (we ignore any light outside of this)'''
+        left_laser_img = ignore_half(calibration_img, True) #right blacked out
+        right_laser_img = ignore_half(calibration_img, False) #left blacked out
+   
+        x = line_coords(thresh(calibration_img, 1, 10))
+        if len(x) == 0:
+            return calibration_img.shape[1]
+        x = x[:, 0]
+        return np.bincount(x).argmax() - BACK_WALL_MARGIN  # mode minus margin
+ 
+#        left = line_coords(thresh(left_laser_img, 1, 10))
+#        if len(left) == 0:
+#            left = 0
+#        else:
+#            left = np.bincount( left[:,0] ).argmax() + BACK_WALL_MARGIN # mode minus margin
+#        self.wall_left = left
+#    
+#        right = line_coords(thresh(right_laser_img, 1, 10))
+#        if len(right)==0:
+#            right = calibration_img.shape[1]
+#        else:
+#            right = np.bincount( right[:,0] ).argmax() - BACK_WALL_MARGIN
+#        self.wall_right = right
+
     def process_picture(self, picture, angle, right=False):
         ''' Takes picture and angle (in degrees).  Adds to point cloud '''
         x_center = picture.shape[1] * CENTER
-        thresholded = thresh(picture, right=right)  # Do a hard threshold of the image
+
+        left_img = ignore_half(picture, True)
+        right_img = ignore_half(picture, False)
+
+        lthresh = thresh(left_img)  # Do a hard threshold of the image
+        rthresh = thresh(right_img)  # Do a hard threshold of the image
+
         #cv2.imwrite('thresh_%d.jpg'%angle, thresholded) # for debugging
-        pixels = line_coords(thresholded, x_center)     # Get line coords from image
-
-        # filter out any pixels to right of back wall line
-        pixels = filter(lambda p: p[0] < self.back_wall_x - x_center, pixels)
-
+        pixels = line_coords(lthresh, x_center)     # Get line coords from image
+        # filter out any pixels outside back wall lines
+        pixels = filter(lambda p: p[0] < self.wall_right - x_center and p[0] > self.wall_left - x_center, pixels)
         # add to point cloud
         self.point_cloud.extend(
             process_line(pixels, angle, self.distance, right=right))
-        return thresholded
+
+        pixels = line_coords(rthresh, x_center)     # Get line coords from image
+        # filter out any pixels outside back wall lines
+        pixels = filter(lambda p: p[0] < self.wall_right - x_center and p[0] > self.wall_left - x_center, pixels)
+        # add to point cloud
+        self.point_cloud.extend(
+            process_line(pixels, angle, self.distance, right=right))
+
+        return (left_img, right_img)
 
     def process_pictures(self, pictures, prefix=None):
         # process pics - Does not support dual lasers yet
@@ -207,9 +237,10 @@ class Processor:
         processed_r = []
         for i, img in enumerate(images):
             angle = 360.0 * i * num_rotations / len(images)
-            processed_l.append(self.process_picture(img, angle))
+            l, r = self.process_picture(img, angle)
+            processed_l.append(l)
             if right:
-                processed_r.append(self.process_picture(img, angle, right=True))
+                processed_r.append(r)
             print("Processing image {0} of {1}".format(i + 1, len(images)))
 
         if prefix:
