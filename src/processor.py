@@ -20,7 +20,7 @@ import util
 CENTER = 0.53  # for old scans
 HARD_THRESHOLD = 40       # always ignore pixels below this value
 BACK_WALL_MARGIN = 15
-LINE_COORDS_BUFFER = 5    # Ignore pixels within this distance of the edge
+LINE_COORDS_BUFFER = 5
 PERCENT_TOP_PIXELS = 0.2  # max percent of brightness-ranked pixels to select
 
 
@@ -71,14 +71,15 @@ def line_coords(thresholded, x_center=None):
         pixels = [(x - x_center, -y) for (x, y) in pixels]
     return np.array(pixels)
 
-
-def process_line(line_coords, angle, distance):
+def process_line(line_coords, angle, distance, right=False):
     '''
     Return [a list of (x,y,z)] tuples representing the point cloud calculated
         from line_coords and the given angle (in degrees)
     '''
     angle = radians(angle)
     coords = []
+    if right:
+        x = -x
     for x, y in line_coords:
         nx = x * math.cos(angle)
         nz = y  # swap y,z for delaunay tetrahedralization
@@ -130,10 +131,10 @@ class Processor:
         if path:
             self.load_cloud(path)
 
-    def process_picture(self, picture, angle):
+    def process_picture(self, picture, angle, right=False):
         ''' Takes picture and angle (in degrees).  Adds to point cloud '''
         x_center = picture.shape[1] * CENTER
-        thresholded = thresh(picture)                   # Do a hard threshold of the image
+        thresholded = thresh(picture, right=right)  # Do a hard threshold of the image
         #cv2.imwrite('thresh_%d.jpg'%angle, thresholded) # for debugging
         pixels = line_coords(thresholded, x_center)     # Get line coords from image
 
@@ -142,17 +143,17 @@ class Processor:
 
         # add to point cloud
         self.point_cloud.extend(
-            process_line(pixels, angle, self.distance))
+            process_line(pixels, angle, self.distance, right=right))
         return thresholded
 
     def process_pictures(self, pictures, prefix=None):
-        # process pics
+        # process pics - Does not support dual lasers yet
         if filter(lambda x: x is None, pictures):
             raise Exception('some pictures are null')
 
         processed = []
         for i, picture in enumerate(pictures):
-            #picture = resize_image(picture) #if we turn resize back on
+            #picture = resize_image(picture)  # if we turn resize back on
             #  don't forget to adjust back_wall_x
             processed.append(self.process_picture(picture, i * 360.0 / len(pictures)))
             print "processed %d; angle %f" % (i, i * 360.0 / len(pictures))
@@ -192,21 +193,29 @@ class Processor:
         visualize_points(np.array(self.point_cloud))
         #visualize_mesh(np.array(self.point_cloud))
 
-    def process_continuous(self, images, num_rotations, prefix=None):
-        processed = []
+    def process_continuous(self, images, num_rotations, prefix=None, right=False):
+        processed_l = []
+        processed_r = []
         for i, img in enumerate(images):
             angle = 360.0 * i * num_rotations / len(images)
-            processed.append(self.process_picture(img, angle))
+            processed_l.append(self.process_picture(img, angle))
+            if right:
+                processed_r.append(self.process_picture(img, angle, right=True))
             print("Processing image {0} of {1}".format(i + 1, len(images)))
 
         if prefix:
-            util.save_images(processed,
+            util.save_images(processed_l,
                              prefix,
-                             dir_name=os.path.join("img", prefix, "processed"))
+                             dir_name=os.path.join("img", prefix + "_l", "processed"))
+            if right:
+                util.save_images(processed_r,
+                                 prefix,
+                                 dir_name=os.path.join("img", prefix + "_r", "processed"))
 
 
 def process_scan(rotations, prefix,
-                 calibration_name="calibration/calibration.jpg"):
+                 calibration_name="calibration/calibration.jpg",
+                 right=False):
     calibration_img = cv2.imread(calibration_name)
     proc = Processor(calibration_img)
 
@@ -217,6 +226,6 @@ def process_scan(rotations, prefix,
         images.append(cv2.imread(f))
 
     #proc.process_pictures(images)
-    proc.process_continuous(images, rotations, prefix=prefix)
+    proc.process_continuous(images, rotations, prefix=prefix, right=right)
     #proc.visualize()
     proc.save_ply("ply/" + prefix + '.ply')
