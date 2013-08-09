@@ -1,4 +1,5 @@
 import os
+import time
 import util
 import serial
 import serial.tools.list_ports
@@ -53,6 +54,7 @@ class Laser:
     def on(self):
         self.com.write('-1')
         wait_arduino(self.com)
+        time.sleep(1)  # Wait for laser to warm up
 
     def off(self):
         self.com.write('-2')
@@ -133,14 +135,12 @@ class Scanner:
         return images
 
 
-def run_scan(num_rotations, prefix):
+def run_scan(rotations, prefix):
     s = Scanner()
     print("Scanner initialized")
-    result = s.continuous(num_rotations)
+    result = s.continuous(rotations)
     print("Images taken")
-
-    dir_name = os.path.join("img", prefix)
-    if not os.path.exists(dir_name):
-        os.makedirs(dir_name)
-    util.save_images(result, prefix=os.path.join(dir_name, "%s_{0}" % prefix))
+    util.save_images(result,
+                     prefix,
+                     dir_name=os.path.join("img", prefix, "raw"))
     print("Images saved")

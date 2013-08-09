@@ -8,10 +8,16 @@ from math import radians
 import pylab
 
 import matplotlib.pyplot as plt
+from matplotlib import cm
+from matplotlib.mlab import griddata
+from mpl_toolkits.mplot3d import Axes3D
+from scipy.spatial import Delaunay
+
+import util
 
 
-CENTER = 0.495  # current center
-#CENTER = 0.53  # for old scans
+#CENTER = 0.51  # current center
+CENTER = 0.53  # for old scans
 HARD_THRESHOLD = 40       # always ignore pixels below this value
 BACK_WALL_MARGIN = 15
 LINE_COORDS_BUFFER = 5    # Ignore pixels within this distance of the edge
@@ -137,16 +143,24 @@ class Processor:
         # add to point cloud
         self.point_cloud.extend(
             process_line(pixels, angle, self.distance))
+        return thresholded
 
-    def process_pictures(self, pictures):
+    def process_pictures(self, pictures, prefix=None):
         # process pics
         if filter(lambda x: x is None, pictures):
             raise Exception('some pictures are null')
+
+        processed = []
         for i, picture in enumerate(pictures):
             #picture = resize_image(picture) #if we turn resize back on
             #  don't forget to adjust back_wall_x
-            self.process_picture(picture, i * 360.0 / len(pictures))
+            processed.append(self.process_picture(picture, i * 360.0 / len(pictures)))
             print "processed %d; angle %f" % (i, i * 360.0 / len(pictures))
+
+        if prefix:
+            util.save_images(processed,
+                             prefix,
+                             dir_name=os.path.join("img", prefix, "processed"))
 
         # save to wrl
         #points_to_mesh(self.point_cloud, 'OMG.wrl')
@@ -178,25 +192,31 @@ class Processor:
         visualize_points(np.array(self.point_cloud))
         #visualize_mesh(np.array(self.point_cloud))
 
-    def process_continuous(self, images, num_rotations):
+    def process_continuous(self, images, num_rotations, prefix=None):
+        processed = []
         for i, img in enumerate(images):
             angle = 360.0 * i * num_rotations / len(images)
-            self.process_picture(img, angle)
-            print("Processing image {0} of {1}".format(i, len(images)))
+            processed.append(self.process_picture(img, angle))
+            print("Processing image {0} of {1}".format(i + 1, len(images)))
+
+        if prefix:
+            util.save_images(processed,
+                             prefix,
+                             dir_name=os.path.join("img", prefix, "processed"))
 
 
-def process_scan(num_rotations, prefix,
+def process_scan(rotations, prefix,
                  calibration_name="calibration/calibration.jpg"):
     calibration_img = cv2.imread(calibration_name)
     proc = Processor(calibration_img)
 
     images = []
-    path = os.path.join('img', prefix)
+    path = os.path.join('img', prefix, 'raw')
     for f in os.listdir(path):
         f = os.path.join(path, f)
         images.append(cv2.imread(f))
 
     #proc.process_pictures(images)
-    proc.process_continuous(images, num_rotations)
-    proc.visualize()
+    proc.process_continuous(images, rotations, prefix=prefix)
+    #proc.visualize()
     proc.save_ply("ply/" + prefix + '.ply')

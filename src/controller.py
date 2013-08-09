@@ -4,9 +4,10 @@ from scanner import run_scan
 
 
 if __name__ == "__main__":
+    doc_string = ("python {0} [wait|scan|process|scan_and_process] prefix "
+                  "num_rotations [calibration_image]").format(sys.argv[0])
     if len(sys.argv) < 4:
-        print(("python {0} [wait|scan|process|scan_and_process] prefix "
-              "num_rotations [calibration_image]").format(sys.argv[0]))
+        print(doc_string)
         exit()
     action = sys.argv[1]
     prefix = str(sys.argv[2])
@@ -27,3 +28,5 @@ if __name__ == "__main__":
         run_scan(rotations=rotations, prefix=prefix)
         process_scan(rotations=rotations, prefix=prefix,
                      calibration_name=calibration_name)
+    else:
+        print(doc_string)
