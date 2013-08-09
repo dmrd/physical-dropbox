@@ -142,14 +142,11 @@ class Scanner:
 def run_scan(rotations, prefix, right=False):
     s = Scanner()
     print("Scanner initialized")
+    print("Current laser is: " + "right" if right else "left")
     result = s.continuous(rotations, right=right)
     print("Images taken")
-    if right:
-        util.save_images(result,
-                         prefix,
-                         dir_name=os.path.join("img", prefix, "raw_r"))
-    else:
-        util.save_images(result,
-                         prefix,
-                         dir_name=os.path.join("img", prefix, "raw_l"))
+    raw_dir = 'raw_r' if right else 'raw_l'
+    util.save_images(result,
+                     prefix,
+                     dir_name=os.path.join("img", prefix, raw_dir))
     print("Images saved")
