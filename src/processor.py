@@ -25,7 +25,7 @@ R_CENTER = 0.45
 HARD_THRESHOLD = 40       # always ignore pixels below this value
 BACK_WALL_MARGIN = 15
 LINE_COORDS_BUFFER = 5    # Ignore pixels within this distance of the edge
-PERCENT_TOP_PIXELS = 0.3  # max percent of brightness-ranked pixels to select
+PERCENT_TOP_PIXELS = 0.2  # max percent of brightness-ranked pixels to select
 
 
 def ply_write(path, cloud):

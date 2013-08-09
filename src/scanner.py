@@ -124,6 +124,8 @@ class Scanner:
         return result
 
     def continuous(self, rotations=1, right=False):
+        self.laser.off(False)
+        self.laser.off(True)
         self.laser.on(right)
 
         self.turntable.async_step(rotations
