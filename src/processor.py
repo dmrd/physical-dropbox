@@ -43,7 +43,7 @@ def thresh(color_img, percent=PERCENT_TOP_PIXELS,
 
     flatrank = np.argsort(bw_img.ravel())
     thresh_index = flatrank[int(len(flatrank) * (1 - percent))]
-    thresh_value = np.ravel(bw_img)[thresh_index]
+    thresh_value = min(np.ravel(bw_img)[thresh_index], 254)
     bw_img = cv2.threshold(bw_img, max(thresh_value, HARD_THRESHOLD),
                            255, cv2.THRESH_BINARY)[1]
 
