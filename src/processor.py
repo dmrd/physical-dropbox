@@ -17,11 +17,28 @@ import util
 
 
 #CENTER = 0.51  # current center
-CENTER = 0.53  # for old scans
+#CENTER = 0.53  # for old scans
+#CENTER = 0.45  # for old scans
+L_CENTER = 0.53
+R_CENTER = 0.45
+#CENTER = -0.53  # for old scans
 HARD_THRESHOLD = 40       # always ignore pixels below this value
 BACK_WALL_MARGIN = 15
 LINE_COORDS_BUFFER = 5    # Ignore pixels within this distance of the edge
-PERCENT_TOP_PIXELS = 0.2  # max percent of brightness-ranked pixels to select
+PERCENT_TOP_PIXELS = 0.3  # max percent of brightness-ranked pixels to select
+
+
+def ply_write(path, cloud):
+    print(path + ": " + str(len(cloud)))
+    with open(path + '.ply', 'w') as f:
+        f.write("ply\nformat ascii 1.0\n")
+        f.write("element vertex {0}\n".format(len(cloud)))
+        f.write("property float x\nproperty float y\nproperty float z\n")
+        f.write("element face 0\n")
+        f.write("element edge 0\n")
+        f.write("end_header\n")
+        for point in cloud:
+            f.write("{0} {1} {2}\n".format(point[0], point[1], point[2]))
 
 
 def find_back_wall(calibration_img):
@@ -124,15 +141,17 @@ class Processor:
     def __init__(self, calibration_img, laser_camera_distance=1, laser_angle=30.0, path=None):
         self.back_wall_x = find_back_wall(calibration_img)
         print "back wall x: %d pixels" % self.back_wall_x
-        self.point_cloud = []
+        self.point_cloud_l = []
+        self.point_cloud_r = []
         self.distance = laser_camera_distance
         self.angle = laser_angle
         if path:
             self.load_cloud(path)
 
-    def process_picture(self, picture, angle):
+    def process_picture(self, picture, angle, right=False):
         ''' Takes picture and angle (in degrees).  Adds to point cloud '''
-        x_center = picture.shape[1] * CENTER
+        center_val = R_CENTER if right else L_CENTER
+        x_center = picture.shape[1] * center_val
         thresholded = thresh(picture)                   # Do a hard threshold of the image
         #cv2.imwrite('thresh_%d.jpg'%angle, thresholded) # for debugging
         pixels = line_coords(thresholded, x_center)     # Get line coords from image
@@ -141,8 +160,12 @@ class Processor:
         pixels = filter(lambda p: p[0] < self.back_wall_x - x_center, pixels)
 
         # add to point cloud
-        self.point_cloud.extend(
-            process_line(pixels, angle, self.distance))
+        if right:
+            points = process_line(pixels, angle, self.distance)
+            self.point_cloud_r.extend(points)
+        else:
+            points = process_line(pixels, angle + 120, self.distance)
+            self.point_cloud_l.extend(points)
         return thresholded
 
     def process_pictures(self, pictures, prefix=None):
@@ -177,53 +200,48 @@ class Processor:
             for point in self.point_cloud:
                 writer.writerow(point)
 
-    def save_ply(self, path):
-        with open(path, 'w') as f:
-            f.write("ply\nformat ascii 1.0\n")
-            f.write("element vertex {0}\n".format(len(self.point_cloud)))
-            f.write("property float x\nproperty float y\nproperty float z\n")
-            f.write("element face 0\n")
-            f.write("element edge 0\n")
-            f.write("end_header\n")
-            for point in self.point_cloud:
-                f.write("{0} {1} {2}\n".format(point[0], point[1], point[2]))
+    def save_ply(self, path, left=False, right=False, dual=False):
+        if left:
+            ply_write(path + '_l', self.point_cloud_l)
+        if right:
+            ply_write(path + '_r', self.point_cloud_r)
+        if dual:
+            ply_write(path + '_d', self.point_cloud_l + self.point_cloud_r)
 
     def visualize(self):
         visualize_points(np.array(self.point_cloud))
         #visualize_mesh(np.array(self.point_cloud))
 
-    def process_continuous(self, images, num_rotations, prefix=None):
+    def process_continuous(self, images, num_rotations, prefix=None, right=False):
         processed = []
         for i, img in enumerate(images):
             angle = 360.0 * i * num_rotations / len(images)
-            processed.append(self.process_picture(img, angle))
+            processed.append(self.process_picture(img, angle, right))
             print("Processing image {0} of {1}".format(i + 1, len(images)))
 
         if prefix:
+            raw_dir = 'processed_r' if right else 'processed_l'
             util.save_images(processed,
                              prefix,
-                             dir_name=os.path.join("img", prefix, "processed"))
+                             dir_name=os.path.join("img", prefix, raw_dir))
 
 
-def process_scan(rotations, prefix,
-                 calibration_name="calibration/calibration.jpg",
-                 right=False):
-    calibration_img = cv2.imread(calibration_name)
-    proc = Processor(calibration_img)
+    def process_scan(self, rotations, prefix,
+                     calibration_name="calibration/calibration.jpg",
+                     right=False):
 
-    images = []
+        images = []
 
-    raw_dir = 'raw_r' if right else 'raw_l'
-    if right:
-        path = os.path.join('img', prefix, raw_dir)
-    else:
-        path = os.path.join('img', prefix, raw_dir)
+        raw_dir = 'raw_r' if right else 'raw_l'
+        if right:
+            path = os.path.join('img', prefix, raw_dir)
+        else:
+            path = os.path.join('img', prefix, raw_dir)
 
-    for f in os.listdir(path):
-        f = os.path.join(path, f)
-        images.append(cv2.imread(f))
+        for f in os.listdir(path):
+            f = os.path.join(path, f)
+            images.append(cv2.imread(f))
 
-    #proc.process_pictures(images)
-    proc.process_continuous(images, rotations, prefix=prefix)
-    #proc.visualize()
-    proc.save_ply("ply/" + prefix + '.ply')
+        #proc.process_pictures(images)
+        self.process_continuous(images, rotations, prefix=prefix, right=right)
+        #proc.visualize()

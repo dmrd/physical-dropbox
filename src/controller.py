@@ -1,6 +1,7 @@
 import sys
 import os
-from processor import process_scan
+import cv2
+from processor import Processor
 from scanner import run_scan
 
 # Set directory to write files to
@@ -9,24 +10,31 @@ os.chdir(os.path.join(directory, "../data"))
 
 
 def scan_mode(mode, prefix, rotations):
-    if mode == "left" or mode == "both":
+    if mode == "left" or mode == "dual":
         run_scan(rotations=rotations, prefix=prefix, right=False)
-    if mode == "right" or mode == "both":
+    if mode == "right" or mode == "dual":
         run_scan(rotations=rotations, prefix=prefix, right=True)
 
 
 def process_mode(mode, prefix, rotations, calibration_name):
-    print locals()
+    calibration_img = cv2.imread(calibration_name)
+    proc = Processor(calibration_img)
+
     if mode == "left" or mode == "dual":
-        process_scan(rotations=rotations,
-                     prefix=prefix,
-                     calibration_name=calibration_name,
-                     right=False)
+        proc.process_scan(rotations=rotations,
+                          prefix=prefix,
+                          calibration_name=calibration_name,
+                          right=False)
+        proc.save_ply("ply/" + prefix, left=True)
     if mode == "right" or mode == "dual":
-        process_scan(rotations=rotations,
-                     prefix=prefix,
-                     calibration_name=calibration_name,
-                     right=True)
+        proc.process_scan(rotations=rotations,
+                          prefix=prefix,
+                          calibration_name=calibration_name,
+                          right=True)
+        proc.save_ply("ply/" + prefix, right=True)
+    if mode == "dual":
+        proc.save_ply("ply/" + prefix, dual=True)
+
 
 if __name__ == "__main__":
     doc_string = ("python {0} [wait|scan|process|scan_and_process] prefix "
@@ -42,6 +50,7 @@ if __name__ == "__main__":
 
     calibration_name = 'calibration/calibration.jpg'
 
+    assert mode in ['dual', 'left', 'right']
     if len(sys.argv) > 5:
         calibration_name = sys.argv[5]
     if action == "wait":
