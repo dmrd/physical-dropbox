@@ -25,13 +25,22 @@ PERCENT_TOP_PIXELS = 0.2  # max percent of brightness-ranked pixels to select
 
 
 def find_back_wall(calibration_img):
-    '''pick x-coordinate for laser line falling on back wall
-       (we ignore any light to the right of this)'''
+    '''pick x-coordinate for laser lines falling on back wall
+       (we ignore any light outside of this)'''
     x = line_coords(thresh(calibration_img, 1, 10))
     if len(x) == 0:
         return calibration_img.shape[1]
     x = x[:, 0]
     return np.bincount(x).argmax() - BACK_WALL_MARGIN  # mode minus margin
+
+def ignore_half(img, right=True):
+    '''return a copy of img with part of the image <right> of axis blacked out'''
+    x_center = int(img.shape[1] * CENTER)
+    if right:
+        cv2.rectangle(img, (x_center,0), (img.shape[1],img.shape[0]), 0, thickness=cv2.cv.CV_FILLED)
+    else:
+        cv2.rectangle(img, (0,0), (x_center,img.shape[0]), 0, thickness=cv2.cv.CV_FILLED)
+    return img
 
 
 def thresh(color_img, percent=PERCENT_TOP_PIXELS,
