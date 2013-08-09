@@ -51,13 +51,15 @@ class Laser:
     def __init__(self, serial_object):
         self.com = serial_object
 
-    def on(self):
-        self.com.write('-1')
+    def on(self, right=False):
+        signal = '-4' if right else '-2'
+        self.com.write(signal)
         wait_arduino(self.com)
         time.sleep(1)  # Wait for laser to warm up
 
-    def off(self):
-        self.com.write('-2')
+    def off(self, right=False):
+        signal = '-3' if right else '-1'
+        self.com.write(signal)
         wait_arduino(self.com)
 
 
@@ -121,8 +123,9 @@ class Scanner:
         self.laser.off()
         return result
 
-    def continuous(self, rotations=3):
-        self.laser.on()
+    def continuous(self, rotations=1, right=False):
+        self.laser.on(right)
+
         self.turntable.async_step(rotations
                                   * self.turntable.STEPS_PER_ROTATION)
         self.com.setTimeout(0)  # Timeout immediately on
@@ -131,16 +134,22 @@ class Scanner:
             _, im = self.camera.take_picture()
             images.append(im)
         self.com.setTimeout(None)
-        self.laser.off()
+        self.laser.off(right)
+
         return images
 
 
-def run_scan(rotations, prefix):
+def run_scan(rotations, prefix, right=False):
     s = Scanner()
     print("Scanner initialized")
-    result = s.continuous(rotations)
+    result = s.continuous(rotations, right=right)
     print("Images taken")
-    util.save_images(result,
-                     prefix,
-                     dir_name=os.path.join("img", prefix, "raw"))
+    if right:
+        util.save_images(result,
+                         prefix,
+                         dir_name=os.path.join("img", prefix, "raw_r"))
+    else:
+        util.save_images(result,
+                         prefix,
+                         dir_name=os.path.join("img", prefix, "raw_l"))
     print("Images saved")

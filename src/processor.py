@@ -206,12 +206,18 @@ class Processor:
 
 
 def process_scan(rotations, prefix,
-                 calibration_name="calibration/calibration.jpg"):
+                 calibration_name="calibration/calibration.jpg",
+                right=False):
     calibration_img = cv2.imread(calibration_name)
     proc = Processor(calibration_img)
 
     images = []
-    path = os.path.join('img', prefix, 'raw')
+
+    if right:
+        path = os.path.join('img', prefix, 'raw')
+    else:
+        path = os.path.join('img', prefix, 'raw')
+
     for f in os.listdir(path):
         f = os.path.join(path, f)
         images.append(cv2.imread(f))
