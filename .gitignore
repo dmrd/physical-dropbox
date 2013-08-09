@@ -1,6 +1,6 @@
 *.py[cod]
-*img/
-*ply/
+data/img/
+data/ply/
 
 # C extensions
 *.so

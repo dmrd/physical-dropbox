@@ -1,7 +1,11 @@
 import sys
+import os
 from processor import process_scan
 from scanner import run_scan
 
+# Set directory to write files to
+directory = os.path.abspath(os.path.dirname(__file__))
+os.chdir(os.path.join(directory, "../data"))
 
 if __name__ == "__main__":
     doc_string = ("python {0} [wait|scan|process|scan_and_process] prefix "
@@ -14,6 +18,7 @@ if __name__ == "__main__":
     rotations = int(sys.argv[3])
 
     calibration_name = 'calibration/calibration.jpg'
+
     if len(sys.argv) > 4:
         calibration_name = sys.argv[4]
 
