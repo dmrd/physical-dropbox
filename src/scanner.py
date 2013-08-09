@@ -52,12 +52,14 @@ class Laser:
         self.com = serial_object
 
     def on(self):
-        self.com.write('-1')
+        self.com.write('-2')
+        self.com.write('-4')
         wait_arduino(self.com)
         time.sleep(1)  # Wait for laser to warm up
 
     def off(self):
-        self.com.write('-2')
+        self.com.write('-1')
+        self.com.write('-3')
         wait_arduino(self.com)
 
 

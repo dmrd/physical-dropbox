@@ -125,7 +125,7 @@ class Processor:
     def __init__(self, calibration_img, laser_camera_distance=1, laser_angle=30.0, path=None):
         self.find_back_wall(calibration_img)
         #print "back wall: left=%d, right=%d" % (self.wall_left, self.wall_right)
-        print "back wall: %d" % self.find_back_wall(calibration_img)
+        #print "back wall: %d" % self.find_back_wall(calibration_img)
         self.point_cloud = []
         self.distance = laser_camera_distance
         self.angle = laser_angle
@@ -137,51 +137,52 @@ class Processor:
            (we ignore any light outside of this)'''
         left_laser_img = ignore_half(calibration_img, True) #right blacked out
         right_laser_img = ignore_half(calibration_img, False) #left blacked out
-   
-        x = line_coords(thresh(calibration_img, 1, 10))
-        if len(x) == 0:
-            return calibration_img.shape[1]
-        x = x[:, 0]
-        return np.bincount(x).argmax() - BACK_WALL_MARGIN  # mode minus margin
- 
-#        left = line_coords(thresh(left_laser_img, 1, 10))
-#        if len(left) == 0:
-#            left = 0
-#        else:
-#            left = np.bincount( left[:,0] ).argmax() + BACK_WALL_MARGIN # mode minus margin
-#        self.wall_left = left
-#    
-#        right = line_coords(thresh(right_laser_img, 1, 10))
-#        if len(right)==0:
-#            right = calibration_img.shape[1]
-#        else:
-#            right = np.bincount( right[:,0] ).argmax() - BACK_WALL_MARGIN
-#        self.wall_right = right
+
+        #x = line_coords(thresh(calibration_img, 1, 10))
+        #if len(x) == 0:
+            #return calibration_img.shape[1]
+        #x = x[:, 0]
+        #return np.bincount(x).argmax() - BACK_WALL_MARGIN  # mode minus margin
+
+        left = line_coords(thresh(left_laser_img, 1, 10))
+        if len(left) == 0:
+            left = 0
+        else:
+            left = np.bincount( left[:,0] ).argmax() + BACK_WALL_MARGIN # mode minus margin
+        self.wall_left = left
+
+        right = line_coords(thresh(right_laser_img, 1, 10))
+        if len(right)==0:
+            right = calibration_img.shape[1]
+        else:
+            right = np.bincount( right[:,0] ).argmax() - BACK_WALL_MARGIN
+        self.wall_right = right
 
     def process_picture(self, picture, angle, right=False):
         ''' Takes picture and angle (in degrees).  Adds to point cloud '''
         x_center = picture.shape[1] * CENTER
 
         left_img = ignore_half(picture, True)
-        right_img = ignore_half(picture, False)
 
         lthresh = thresh(left_img)  # Do a hard threshold of the image
-        rthresh = thresh(right_img)  # Do a hard threshold of the image
-
         #cv2.imwrite('thresh_%d.jpg'%angle, thresholded) # for debugging
         pixels = line_coords(lthresh, x_center)     # Get line coords from image
         # filter out any pixels outside back wall lines
         pixels = filter(lambda p: p[0] < self.wall_right - x_center and p[0] > self.wall_left - x_center, pixels)
         # add to point cloud
         self.point_cloud.extend(
-            process_line(pixels, angle, self.distance, right=right))
+            process_line(pixels, angle, self.distance, right=False))
 
-        pixels = line_coords(rthresh, x_center)     # Get line coords from image
-        # filter out any pixels outside back wall lines
-        pixels = filter(lambda p: p[0] < self.wall_right - x_center and p[0] > self.wall_left - x_center, pixels)
-        # add to point cloud
-        self.point_cloud.extend(
-            process_line(pixels, angle, self.distance, right=right))
+        right_img = None
+        if right:
+            right_img = ignore_half(picture, False)
+            rthresh = thresh(right_img)  # Do a hard threshold of the image
+            pixels = line_coords(rthresh, x_center)     # Get line coords from image
+            # filter out any pixels outside back wall lines
+            pixels = filter(lambda p: p[0] < self.wall_right - x_center and p[0] > self.wall_left - x_center, pixels)
+            # add to point cloud
+            self.point_cloud.extend(
+                process_line(pixels, angle, self.distance, right=True))
 
         return (left_img, right_img)
 
